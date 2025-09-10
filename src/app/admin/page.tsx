@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft } from "lucide-react";
+import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -166,7 +166,6 @@ export default function AdminPage() {
           </Card>
         </div>
 
-        {/* New User Management Section */}
         <Card>
           <CardHeader>
             <CardTitle>Manage Survey Collections</CardTitle>
@@ -190,7 +189,7 @@ export default function AdminPage() {
                   <TableHead>Responses</TableHead>
                   <TableHead>Schedule</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,7 +221,18 @@ export default function AdminPage() {
                           {collection.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right flex gap-2 justify-end">
+                         <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          disabled={collection.status !== 'pending'}
+                        >
+                          <Link href={`/admin/collections/${collection.id}/preview`}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Preview & Send
+                          </Link>
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
