@@ -187,7 +187,7 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Survey</TableHead>
-                  <TableHead>Users</TableHead>
+                  <TableHead>Responses</TableHead>
                   <TableHead>Schedule</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
@@ -198,6 +198,7 @@ export default function AdminPage() {
                   const survey = surveys.find(
                     (s) => s.id === collection.surveyId
                   );
+                  const responseCount = responses.filter(r => r.surveyId === collection.surveyId && collection.userIds.includes(r.userId)).length;
                   return (
                     <TableRow key={collection.id}>
                       <TableCell className="font-medium">
@@ -207,7 +208,7 @@ export default function AdminPage() {
                         {survey?.title || "Unknown Survey"}
                       </TableCell>
                       <TableCell>
-                        {collection.userIds.length} users
+                        {responseCount} / {collection.userIds.length}
                       </TableCell>
                       <TableCell>{collection.schedule}</TableCell>
                       <TableCell>
