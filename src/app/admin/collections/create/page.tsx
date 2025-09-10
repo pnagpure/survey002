@@ -4,13 +4,12 @@ import React, { useState } from 'react';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -18,41 +17,116 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from '@/components/ui/checkbox';
-import { surveys } from "@/lib/data";
-import { users } from '@/lib/users';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
+import { ArrowLeft, Upload, UserPlus, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import * as XLSX from 'xlsx';
 
+// In a real app, you would have a more robust User type and import it
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
 
 export default function CreateCollectionPage() {
   const [name, setName] = useState('');
   const [surveyId, setSurveyId] = useState('');
-  const [userIds, setUserIds] = useState<string[]>([]);
   const [schedule, setSchedule] = useState('');
+  
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  
   const router = useRouter();
 
+  // Handle adding a new user manually
+  const handleAddUser = () => {
+    if (newUserName && newUserEmail) {
+      const newUser: User = {
+        id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: newUserName,
+        email: newUserEmail,
+      };
+      setUsers((prev) => [...prev, newUser]);
+      setNewUserName('');
+      setNewUserEmail('');
+    }
+  };
+  
+  const handleRemoveUser = (userId: string) => {
+    setUsers((prev) => prev.filter(user => user.id !== userId));
+  }
+
+  // Handle Excel file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+          const newUsers = worksheet.map((row: any) => ({
+            id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            name: row.Name || row.name || '',
+            email: row.Email || row.email || '',
+          })).filter((user: User) => user.name && user.email);
+          setUsers((prev) => [...prev, ...newUsers]);
+        } catch (error) {
+          console.error("Error parsing Excel file:", error);
+          alert("Failed to parse the Excel file. Please ensure it's a valid format.");
+        }
+      };
+      reader.readAsBinaryString(file);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name || !surveyId || !schedule || users.length === 0) {
+      alert("Please fill all fields and add at least one user.");
+      return;
+    };
+
     // In a real app, this would write to your database (e.g., Firestore)
+    console.log("Creating collection with the following data:");
     console.log({
+      name,
+      surveyId,
+      schedule,
+      status: new Date(schedule) <= new Date() ? 'active' : 'pending',
+      users, // In a real app, you would save user IDs
+    });
+
+    // Example of saving to Firestore (requires setup)
+    /*
+    const userIds = await Promise.all(
+        users.map(async (user) => {
+            // Check if user exists, if not, create them.
+            // For simplicity, we assume we create new users every time here.
+            const docRef = await addDoc(collection(db, 'users'), { name: user.name, email: user.email });
+            return docRef.id;
+        })
+    );
+
+    await addDoc(collection(db, 'surveyCollections'), {
       name,
       surveyId,
       userIds,
       schedule,
-      status: new Date(schedule) <= new Date() ? 'active' : 'pending' 
+      status: new Date(schedule) <= new Date() ? 'active' : 'pending',
     });
-    alert('Collection created! Check console for data.');
-    router.push('/admin');
-  };
+    */
 
-  const handleUserToggle = (userId: string) => {
-    setUserIds((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+    alert('Collection created successfully! Check the console for data.');
+    router.push('/admin');
   };
 
   return (
@@ -75,9 +149,8 @@ export default function CreateCollectionPage() {
         <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="collection-name">Collection Name</Label>
+              <label className="block text-sm font-medium">Collection Name</label>
               <Input
-                id="collection-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Q3 Product Feedback Group"
@@ -85,9 +158,9 @@ export default function CreateCollectionPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="survey-select">Select Survey</Label>
+              <label className="block text-sm font-medium">Select Survey</label>
               <Select onValueChange={setSurveyId} required>
-                <SelectTrigger id="survey-select">
+                <SelectTrigger>
                   <SelectValue placeholder="Choose a survey" />
                 </SelectTrigger>
                 <SelectContent>
@@ -99,30 +172,66 @@ export default function CreateCollectionPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Select Users</Label>
-              <Card className="p-4 bg-muted/50 max-h-60 overflow-y-auto">
-                <div className="space-y-3">
-                    {users.map((user) => (
-                    <div key={user.id} className="flex items-center gap-3">
-                        <Checkbox
-                            id={`user-${user.id}`}
-                            checked={userIds.includes(user.id)}
-                            onCheckedChange={() => handleUserToggle(user.id)}
-                        />
-                        <Label htmlFor={`user-${user.id}`} className="font-normal flex flex-col">
-                           <span>{user.name}</span>
-                           <span className="text-xs text-muted-foreground">{user.email}</span>
-                        </Label>
+            
+            <div className="space-y-4 rounded-lg border p-4">
+                <h3 className="text-lg font-medium">Manage Users</h3>
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium">Add User Manually</label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newUserName}
+                        onChange={(e) => setNewUserName(e.target.value)}
+                        placeholder="User Name"
+                      />
+                      <Input
+                        value={newUserEmail}
+                        onChange={(e) => setNewUserEmail(e.target.value)}
+                        placeholder="user@example.com"
+                        type="email"
+                      />
+                      <Button type="button" onClick={handleAddUser} variant="secondary">
+                        <UserPlus />
+                      </Button>
                     </div>
-                    ))}
                 </div>
-              </Card>
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium">Or Upload from Excel</label>
+                    <div className="flex items-center gap-2">
+                       <Input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={handleFileUpload}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
+                </div>
+                
+                 <div>
+                    <h4 className="text-sm font-medium mb-2">Added Users ({users.length})</h4>
+                    <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
+                        {users.length === 0 ? (
+                        <p className="text-sm text-center text-muted-foreground py-4">No users added yet.</p>
+                        ) : (
+                        users.map((user) => (
+                          <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
+                                <X className="h-4 w-4 text-destructive"/>
+                            </Button>
+                          </div>
+                        ))
+                        )}
+                    </div>
+                </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="schedule-date">Schedule Date</Label>
+              <label className="block text-sm font-medium">Schedule Date</label>
               <Input
-                id="schedule-date"
                 type="date"
                 value={schedule}
                 onChange={(e) => setSchedule(e.target.value)}
