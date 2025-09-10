@@ -70,9 +70,12 @@ export function SurveyTaker({ survey }: { survey: Survey }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      {survey.questions.map((q) => (
-        <div key={q.id} className="space-y-3">
-          <Label className="text-lg font-semibold">{q.text}</Label>
+      {survey.questions.map((q, index) => (
+        <div key={q.id} className="space-y-4 border-l-2 border-primary/50 pl-6 py-2">
+          <Label className="text-xl font-semibold flex items-center">
+            <span className="text-primary mr-3">{index + 1}.</span>
+            {q.text}
+            </Label>
           <Controller
             name={q.id}
             control={control}
@@ -85,11 +88,11 @@ export function SurveyTaker({ survey }: { survey: Survey }) {
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex space-x-2"
+                    className="flex space-x-2 pt-2"
                   >
                     {[1, 2, 3, 4, 5].map((val) => (
-                      <div key={val} className="flex flex-col items-center space-y-1">
-                        <RadioGroupItem value={String(val)} id={`${q.id}-${val}`} />
+                      <div key={val} className="flex flex-col items-center space-y-2">
+                        <RadioGroupItem value={String(val)} id={`${q.id}-${val}`} className="h-6 w-6"/>
                         <Label htmlFor={`${q.id}-${val}`}>{val}</Label>
                       </div>
                     ))}
@@ -102,9 +105,9 @@ export function SurveyTaker({ survey }: { survey: Survey }) {
                     className="space-y-2"
                   >
                     {q.options?.map((opt) => (
-                      <div key={opt} className="flex items-center space-x-2">
+                      <div key={opt} className="flex items-center space-x-3">
                         <RadioGroupItem value={opt} id={`${q.id}-${opt}`} />
-                        <Label htmlFor={`${q.id}-${opt}`}>{opt}</Label>
+                        <Label htmlFor={`${q.id}-${opt}`} className="font-normal text-base">{opt}</Label>
                       </div>
                     ))}
                   </RadioGroup>
@@ -115,7 +118,7 @@ export function SurveyTaker({ survey }: { survey: Survey }) {
           {errors[q.id] && <p className="text-sm text-destructive">{String(errors[q.id]?.message)}</p>}
         </div>
       ))}
-      <Button type="submit" disabled={isSubmitting} className="w-full">
+      <Button type="submit" disabled={isSubmitting} size="lg" className="w-full mt-10">
         {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Submit Response
       </Button>

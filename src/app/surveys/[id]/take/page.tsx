@@ -15,10 +15,10 @@ export default function TakeSurveyPage({
   }
 
   return (
-    <Card className="w-full max-w-2xl shadow-2xl">
-      <CardHeader>
-        <CardTitle className="text-3xl">{survey.title}</CardTitle>
-        <CardDescription>{survey.description}</CardDescription>
+    <Card className="w-full max-w-2xl shadow-xl border-t-4 border-t-primary">
+      <CardHeader className="text-center">
+        <CardTitle className="text-3xl font-bold">{survey.title}</CardTitle>
+        <CardDescription className="text-lg">{survey.description}</CardDescription>
       </CardHeader>
       <CardContent>
         <SurveyTaker survey={survey} />

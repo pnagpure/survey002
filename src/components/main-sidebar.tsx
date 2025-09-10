@@ -13,42 +13,44 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export function MainSidebar() {
   return (
     <aside className="w-80 min-w-80 hidden lg:flex flex-col gap-4 border-r bg-card p-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3 p-2">
         <div className="p-2 bg-primary/20 text-primary rounded-lg">
           <BarChart2 className="h-6 w-6" />
         </div>
-        <h1 className="text-2xl font-bold text-foreground">SurveySwift</h1>
+        <h1 className="text-xl font-bold text-foreground">SurveySwift</h1>
       </div>
 
-      <nav className="flex flex-col gap-2 mt-4">
-        <Button variant="ghost" className="justify-start gap-2" asChild>
+      <nav className="flex flex-col gap-1 p-2">
+        <Button variant="ghost" className="justify-start gap-3" asChild>
           <Link href="/dashboard">
-            <Home className="h-4 w-4" />
+            <Home className="h-5 w-5" />
             Dashboard
           </Link>
         </Button>
-        <Button variant="ghost" className="justify-start gap-2" asChild>
+        <Button variant="ghost" className="justify-start gap-3" asChild>
           <Link href="/surveys/create">
-            <PlusCircle className="h-4 w-4" />
+            <PlusCircle className="h-5 w-5" />
             New Survey
           </Link>
         </Button>
       </nav>
 
-      <div className="mt-4 flex-1 overflow-y-auto">
-        <h2 className="px-4 text-lg font-semibold tracking-tight text-foreground">
+      <div className="mt-4 flex-1 overflow-y-auto px-2">
+        <h2 className="px-2 text-sm font-semibold tracking-tight text-muted-foreground uppercase">
           Surveys
         </h2>
-        <div className="space-y-2 p-2">
+        <div className="space-y-1 mt-2">
           {surveys.map((survey) => (
             <Link key={survey.id} href={`/surveys/${survey.id}/results`} className="block">
               <div className="flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors">
                 <FileText className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground truncate">{survey.title}</span>
+                <span className="text-sm font-medium text-foreground truncate flex-1">{survey.title}</span>
+                <Badge variant="secondary">{getResponsesBySurveyId(survey.id).length}</Badge>
               </div>
             </Link>
           ))}
@@ -57,3 +59,6 @@ export function MainSidebar() {
     </aside>
   );
 }
+
+// Helper to get response count, since it's not on the survey object
+import { getResponsesBySurveyId } from "@/lib/data";

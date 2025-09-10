@@ -15,7 +15,7 @@ import {
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { generateReport } from '@/lib/actions';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 
@@ -23,8 +23,15 @@ interface ProcessedResults {
   [questionId: string]: {
     type: 'rating' | 'multiple-choice' | 'text';
     title: string;
+    icon: React.ElementType;
     data: any;
   };
+}
+
+const icons = {
+    rating: Star,
+    'multiple-choice': BarChartIcon,
+    text: MessageSquare,
 }
 
 export function SurveyResults({ survey, responses }: { survey: Survey; responses: SurveyResponse[] }) {
@@ -36,21 +43,22 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     if (!responses.length) return {};
     
     return survey.questions.reduce((acc, q) => {
+        const common = { title: q.text, icon: icons[q.type] };
       if (q.type === 'rating') {
         const ratingCounts = [1, 2, 3, 4, 5].map(rating => ({
             name: `${rating} Star${rating > 1 ? 's' : ''}`,
             value: responses.filter(r => r.answers[q.id] === rating || String(r.answers[q.id]) === String(rating)).length,
         }));
-        acc[q.id] = { type: 'rating', title: q.text, data: ratingCounts };
+        acc[q.id] = { ...common, type: 'rating', data: ratingCounts };
       } else if (q.type === 'multiple-choice' && q.options) {
         const optionCounts = q.options.map(option => ({
             name: option,
             value: responses.filter(r => r.answers[q.id] === option).length,
         }));
-        acc[q.id] = { type: 'multiple-choice', title: q.text, data: optionCounts };
+        acc[q.id] = { ...common, type: 'multiple-choice', data: optionCounts };
       } else if (q.type === 'text') {
         const textAnswers = responses.map(r => r.answers[q.id]).filter(Boolean);
-        acc[q.id] = { type: 'text', title: q.text, data: textAnswers };
+        acc[q.id] = { ...common, type: 'text', data: textAnswers };
       }
       return acc;
     }, {} as ProcessedResults);
@@ -93,11 +101,14 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>AI-Generated Report</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Bot />
+                        AI-Powered Report
+                    </CardTitle>
                     <CardDescription>A summary of key insights from your survey data.</CardDescription>
                 </div>
                 <Button onClick={handleGenerateReport} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Generate Report
                 </Button>
             </CardHeader>
@@ -110,7 +121,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                         </div>
                     )}
                     {report && (
-                         <div className="prose prose-sm max-w-none p-6 bg-muted/50 rounded-lg whitespace-pre-wrap">{report}</div>
+                         <div className="prose prose-sm max-w-none p-6 bg-muted/50 rounded-lg whitespace-pre-wrap font-serif">{report}</div>
                     )}
                 </CardContent>
             )}
@@ -118,10 +129,11 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
 
       {Object.keys(processedResults).map(questionId => {
         const result = processedResults[questionId];
+        const Icon = result.icon;
         return (
           <Card key={questionId}>
             <CardHeader>
-              <CardTitle>{result.title}</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Icon className="text-primary"/>{result.title}</CardTitle>
             </CardHeader>
             <CardContent>
               { (result.type === 'rating' || result.type === 'multiple-choice') && result.data.length > 0 && (

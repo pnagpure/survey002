@@ -2,7 +2,7 @@ import Link from "next/link";
 import { surveys } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink, BarChart2, CheckSquare } from "lucide-react";
+import { ExternalLink, BarChart2, CheckSquare, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
@@ -19,7 +19,7 @@ export default function DashboardPage() {
         {surveys.map((survey) => (
           <Card key={survey.id} className="flex flex-col">
             <CardHeader>
-              <CardTitle className="tracking-tight">{survey.title}</CardTitle>
+              <CardTitle>{survey.title}</CardTitle>
               <CardDescription className="line-clamp-2">{survey.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow">
@@ -43,13 +43,14 @@ export default function DashboardPage() {
             </CardFooter>
           </Card>
         ))}
-         <Card className="flex flex-col items-center justify-center border-dashed">
-            <CardHeader>
+         <Card className="flex flex-col items-center justify-center border-2 border-dashed bg-muted/50 hover:border-primary transition-colors">
+            <CardHeader className="text-center">
               <CardTitle>Create a New Survey</CardTitle>
+              <CardDescription>Get started in minutes</CardDescription>
             </CardHeader>
             <CardContent>
               <Button asChild>
-                <Link href="/surveys/create">Get Started</Link>
+                <Link href="/surveys/create"><Plus className="mr-2 h-4 w-4"/>Create Survey</Link>
               </Button>
             </CardContent>
          </Card>
