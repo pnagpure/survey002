@@ -22,6 +22,10 @@ export interface Question {
   // For rating and number questions
   min?: number;
   max?: number;
+  // For multiple choice
+  multiple?: boolean;
+  // For file upload
+  accept?: string;
 }
 
 export interface Survey {

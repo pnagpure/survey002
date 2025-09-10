@@ -1,9 +1,11 @@
+
 'use server';
 
 import { z } from 'zod';
 import { getResponsesBySurveyId, getSurveyById } from './data';
 import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
 import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
+import { performStatisticalAnalysis, PerformStatisticalAnalysisInputSchema, PerformStatisticalAnalysisOutput } from '@/ai/flows/perform-statistical-analysis';
 import { revalidatePath } from 'next/cache';
 
 export async function submitResponse(surveyId: string, data: unknown) {
@@ -79,4 +81,18 @@ export async function analyzeText(formData: FormData) {
     console.error(e);
     return { success: false, error: 'Failed to analyze text responses.' };
   }
+}
+
+export async function runStatisticalTest(data: z.infer<typeof PerformStatisticalAnalysisInputSchema>): Promise<{ success: boolean; result?: PerformStatisticalAnalysisOutput; error?: string }> {
+    try {
+      const validatedData = PerformStatisticalAnalysisInputSchema.parse(data);
+      const result = await performStatisticalAnalysis(validatedData);
+      return { success: true, result };
+    } catch (e) {
+        if (e instanceof z.ZodError) {
+            return { success: false, error: 'Invalid input.' };
+        }
+        console.error(e);
+        return { success: false, error: 'Failed to perform statistical analysis.' };
+    }
 }

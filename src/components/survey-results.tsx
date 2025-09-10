@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -33,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
+import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
 
 interface SentimentAnalysis {
     overall: 'Positive' | 'Negative' | 'Neutral' | 'Mixed';
@@ -101,7 +103,7 @@ const getAnalysisOptionsForType = (type: string) => {
         case 'dropdown':
             options.analyses = [
                 { value: 'freq', label: 'Frequency Counts' },
-                { value: 'chi', label: 'Chi-Square Test' },
+                { value: 'chi-square', label: 'Chi-Square Test' },
                 { value: 'contingency', label: 'Contingency Tables' }
             ];
             options.charts = [
@@ -163,6 +165,9 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
   const [report, setReport] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
+  const [isStatAnalysisOpen, setIsStatAnalysisOpen] = useState(false);
+  const [currentQuestionForStatAnalysis, setCurrentQuestionForStatAnalysis] = useState<any>(null);
+
 
   const [processedResults, setProcessedResults] = useState<ProcessedResults>(
     useMemo(() => {
@@ -243,6 +248,16 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
 
     if (analysis === 'text-analysis' && !processedResults[questionId].textAnalysis) {
       handleAnalyzeText(questionId);
+    }
+  };
+
+  const handleStatAnalysisClick = (questionId: string, testType: string) => {
+    if (testType === 'chi-square') {
+        const question = survey.questions.find(q => q.id === questionId);
+        setCurrentQuestionForStatAnalysis(question);
+        setIsStatAnalysisOpen(true);
+    } else {
+        alert(`Statistical test '${testType}' is not implemented yet.`);
     }
   };
 
@@ -368,7 +383,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             {analysisOptions.analyses.map(opt => (
-                                <DropdownMenuItem key={opt.value} onSelect={() => alert(`Running: ${opt.label}`)}>
+                                <DropdownMenuItem key={opt.value} onSelect={() => handleStatAnalysisClick(questionId, opt.value)}>
                                     {opt.label}
                                 </DropdownMenuItem>
                             ))}
@@ -512,6 +527,14 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
           </Card>
         )
       })}
+       <StatisticalAnalysisDialog
+        isOpen={isStatAnalysisOpen}
+        onOpenChange={setIsStatAnalysisOpen}
+        survey={survey}
+        responses={responses}
+        question1={currentQuestionForStatAnalysis}
+        testType="chi-square"
+       />
     </div>
   );
 }
