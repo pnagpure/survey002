@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-// import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
+import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
 
 interface SentimentAnalysis {
     overall: 'Positive' | 'Negative' | 'Neutral' | 'Mixed';
@@ -50,6 +50,7 @@ interface TextAnalysis {
 }
 
 type AnalysisType = 'bar-chart' | 'pie-chart' | 'text-analysis' | 'raw-text' | 'none';
+type StatTestType = 'descriptive' | 'chi-square'
 
 interface ProcessedResults {
   [questionId: string]: {
@@ -92,7 +93,7 @@ const pieColors = [
 ];
 
 const getAnalysisOptionsForType = (type: string) => {
-    const options: { analyses: {value: string, label: string}[], charts: {value: AnalysisType, label: string}[]} = {
+    const options: { analyses: {value: StatTestType, label: string}[], charts: {value: AnalysisType, label: string}[]} = {
         analyses: [],
         charts: []
     };
@@ -102,9 +103,7 @@ const getAnalysisOptionsForType = (type: string) => {
         case 'yesNo':
         case 'dropdown':
             options.analyses = [
-                { value: 'freq', label: 'Frequency Counts' },
                 { value: 'chi-square', label: 'Chi-Square Test' },
-                { value: 'contingency', label: 'Contingency Tables' }
             ];
             options.charts = [
                 { value: 'bar-chart', label: 'Bar Chart' },
@@ -112,35 +111,16 @@ const getAnalysisOptionsForType = (type: string) => {
             ];
             break;
         case 'text':
-            options.analyses = [
-                { value: 'thematic', label: 'Thematic Analysis' },
-                { value: 'word-freq', label: 'Word Frequency' },
-                { value: 'sentiment', label: 'Sentiment Analysis' }
-            ];
+             options.analyses = [];
             options.charts = [
                 { value: 'text-analysis', label: 'AI Sentiment & Thematic Analysis'},
                 { value: 'raw-text', label: 'View Raw Responses'}
             ];
             break;
         case 'rating':
-        case 'matrix':
-            options.analyses = [
-                { value: 'desc', label: 'Mean, Median, Mode' },
-                { value: 'stddev', label: 'Standard Deviation' },
-                { value: 'ttest', label: 't-test / ANOVA' },
-                { value: 'corr', label: 'Correlation' },
-                { value: 'factor', label: 'Factor Analysis' }
-            ];
-            options.charts = [
-                { value: 'bar-chart', label: 'Histogram' },
-            ];
-            break;
         case 'number':
-             options.analyses = [
-                { value: 'desc', label: 'Mean, Median, Mode' },
-                { value: 'stddev', label: 'Standard Deviation' },
-                { value: 'ttest', label: 't-test / ANOVA' },
-                { value: 'regression', label: 'Regression' },
+            options.analyses = [
+                { value: 'descriptive', label: 'Descriptive Statistics' },
             ];
             options.charts = [
                 { value: 'bar-chart', label: 'Histogram' },
@@ -148,9 +128,7 @@ const getAnalysisOptionsForType = (type: string) => {
             break;
         case 'ranking':
              options.analyses = [
-                { value: 'median-rank', label: 'Median Rank' },
-                { value: 'spearman', label: 'Spearman Correlation' },
-                { value: 'freq-rank', label: 'Top Rank Frequency' },
+                 { value: 'descriptive', label: 'Descriptive Statistics' },
             ];
             options.charts = [
                  { value: 'bar-chart', label: 'Rank Distribution' },
@@ -166,7 +144,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   const [isStatAnalysisOpen, setIsStatAnalysisOpen] = useState(false);
-  const [currentQuestionForStatAnalysis, setCurrentQuestionForStatAnalysis] = useState<any>(null);
+  const [statAnalysisConfig, setStatAnalysisConfig] = useState<{question1: any, testType: StatTestType} | null>(null);
 
 
   const [processedResults, setProcessedResults] = useState<ProcessedResults>(
@@ -229,10 +207,12 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                 
                 data = Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
 
-                acc[q.id] = { ...common, type: questionType, data: data };
+                acc[q.id] = { ...common, type: questionType, data: data, selectedAnalysis: 'bar-chart' };
             } else if (questionType === 'text') {
                 const textAnswers = responses.map(r => r.answers[q.id]).filter(Boolean);
-                acc[q.id] = { ...common, type: 'text', data: textAnswers };
+                acc[q.id] = { ...common, type: 'text', data: textAnswers, selectedAnalysis: 'text-analysis' };
+                // Automatically run text analysis for text questions
+                // handleAnalyzeText(q.id, q.text, textAnswers);
             }
             // Add other question type processing here
             return acc;
@@ -240,6 +220,17 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     }, [survey, responses])
   );
   
+  // Auto-run analysis for text questions on initial load
+    useMemo(() => {
+        Object.keys(processedResults).forEach(qId => {
+            const result = processedResults[qId];
+            if (result.type === 'text' && !result.textAnalysis && !result.isAnalyzing) {
+                handleAnalyzeText(qId, result.title, result.data);
+            }
+        });
+    }, [processedResults]);
+
+
   const handleSetAnalysis = (questionId: string, analysis: AnalysisType) => {
     setProcessedResults(prev => ({
       ...prev,
@@ -247,18 +238,16 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     }));
 
     if (analysis === 'text-analysis' && !processedResults[questionId].textAnalysis) {
-      handleAnalyzeText(questionId);
+      handleAnalyzeText(questionId, processedResults[questionId].title, processedResults[questionId].data);
     }
   };
 
-  const handleStatAnalysisClick = (questionId: string, testType: string) => {
-    if (testType === 'chi-square') {
-        const question = survey.questions.find(q => q.id === questionId);
-        setCurrentQuestionForStatAnalysis(question);
+  const handleStatAnalysisClick = (questionId: string, testType: StatTestType) => {
+      const question = survey.questions.find(q => q.id === questionId);
+      if (question) {
+        setStatAnalysisConfig({ question1: question, testType: testType});
         setIsStatAnalysisOpen(true);
-    } else {
-        alert(`Statistical test '${testType}' is not implemented yet.`);
-    }
+      }
   };
 
 
@@ -283,16 +272,15 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     setIsGenerating(false);
   };
   
-  const handleAnalyzeText = async (questionId: string) => {
+  const handleAnalyzeText = async (questionId: string, questionTitle: string, responses: string[]) => {
     setProcessedResults(prev => ({
         ...prev,
         [questionId]: {...prev[questionId], isAnalyzing: true, textAnalysis: null }
     }));
 
-    const questionData = processedResults[questionId];
     const formData = new FormData();
-    formData.append('question', questionData.title);
-    formData.append('responses', JSON.stringify(questionData.data));
+    formData.append('question', questionTitle);
+    formData.append('responses', JSON.stringify(responses));
 
     const result = await analyzeText(formData);
 
@@ -358,6 +346,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
 
       {Object.keys(processedResults).map(questionId => {
         const result = processedResults[questionId];
+        if (!result) return null;
         const Icon = result.icon;
         const analysisOptions = getAnalysisOptionsForType(result.type);
         
@@ -527,14 +516,14 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
           </Card>
         )
       })}
-       {/* <StatisticalAnalysisDialog
+       {statAnalysisConfig && <StatisticalAnalysisDialog
         isOpen={isStatAnalysisOpen}
         onOpenChange={setIsStatAnalysisOpen}
         survey={survey}
         responses={responses}
-        question1={currentQuestionForStatAnalysis}
-        testType="chi-square"
-       /> */}
+        question1={statAnalysisConfig.question1}
+        testType={statAnalysisConfig.testType}
+       />}
     </div>
   );
 }
