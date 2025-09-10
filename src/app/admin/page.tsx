@@ -135,7 +135,7 @@ export default function AdminPage() {
               <CardDescription>
                 The latest responses submitted across all surveys.
               </CardDescription>
-            </Header>
+            </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
