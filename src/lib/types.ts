@@ -56,6 +56,7 @@ export interface SurveyCollection {
   name: string;
   surveyId: string;
   userIds: string[];
+  superUserIds: string[];
   schedule: string;
   status: 'active' | 'pending';
 }

@@ -1,5 +1,5 @@
 
-import type { Survey, SurveyResponse } from './types';
+import type { Survey, SurveyResponse, SurveyCollection } from './types';
 import type { User } from './types';
 
 export const surveys: Survey[] = [
@@ -498,21 +498,13 @@ export const responses: SurveyResponse[] = [
   })),
 ];
 
-export interface SurveyCollection {
-  id: string;
-  name: string;
-  surveyId: string;
-  userIds: string[];
-  schedule: string;
-  status: "active" | "pending";
-}
-
 export const surveyCollections: SurveyCollection[] = [
   {
     id: "collection1",
     name: "Q3 Product Feedback",
     surveyId: "product-feedback-2024",
     userIds: ["user-1", "user-2", "user-4"],
+    superUserIds: ["user-3"],
     schedule: "2024-09-10",
     status: "active",
   },
@@ -521,6 +513,7 @@ export const surveyCollections: SurveyCollection[] = [
     name: "Q2 Employee Engagement",
     surveyId: "workplace-satisfaction-q2",
     userIds: ["user-2", "user-3"],
+    superUserIds: ["user-1"],
     schedule: "2024-09-15",
     status: "pending",
   },
@@ -529,6 +522,7 @@ export const surveyCollections: SurveyCollection[] = [
     name: "Alpha Testers - New Feature",
     surveyId: "product-feedback-2024",
     userIds: ["user-1", "user-3", "user-4"],
+    superUserIds: ["user-2"],
     schedule: "2024-10-01",
     status: "pending",
   },
@@ -537,6 +531,7 @@ export const surveyCollections: SurveyCollection[] = [
     name: "Annual Comprehensive Review",
     surveyId: "comprehensive-template",
     userIds: ["user-1", "user-2", "user-3", "user-4"],
+    superUserIds: [],
     schedule: "2024-11-01",
     status: "pending",
   }

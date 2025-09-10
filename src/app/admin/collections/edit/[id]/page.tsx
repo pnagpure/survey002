@@ -8,12 +8,15 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -36,27 +39,36 @@ export default function EditCollectionPage() {
   const survey = getSurveyById(collection.surveyId);
 
   // State for user management
-  const [users, setUsers] = useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
+  const [respondents, setRespondents] = useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
+  const [superUserIds, setSuperUserIds] = useState<string[]>(collection.superUserIds || []);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
 
   // Handle adding a new user manually
-  const handleAddUser = () => {
+  const handleAddRespondent = () => {
     if (newUserName && newUserEmail) {
       const newUser: User = {
         id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         name: newUserName,
         email: newUserEmail,
       };
-      setUsers((prev) => [...prev, newUser]);
+      setRespondents((prev) => [...prev, newUser]);
       setNewUserName('');
       setNewUserEmail('');
     }
   };
   
-  const handleRemoveUser = (userId: string) => {
-    setUsers((prev) => prev.filter(user => user.id !== userId));
+  const handleRemoveRespondent = (userId: string) => {
+    setRespondents((prev) => prev.filter(user => user.id !== userId));
   }
+  
+  const handleSuperUserToggle = (userId: string) => {
+    setSuperUserIds((prev) => 
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
   // Handle Excel file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,7 +86,7 @@ export default function EditCollectionPage() {
             name: row.Name || row.name || '',
             email: row.Email || row.email || '',
           })).filter((user: User) => user.name && user.email);
-          setUsers((prev) => [...prev, ...newUsers]);
+          setRespondents((prev) => [...prev, ...newUsers]);
         } catch (error) {
           console.error("Error parsing Excel file:", error);
           alert("Failed to parse the Excel file. Please ensure it's a valid format.");
@@ -89,7 +101,8 @@ export default function EditCollectionPage() {
   const handleSaveChanges = () => {
      // In a real app, this would write to your database (e.g., Firestore)
     console.log("Saving changes for collection:", collection.name);
-    console.log("Updated user list:", users.map(u => u.id));
+    console.log("Updated respondent list:", respondents.map(u => u.id));
+    console.log("Updated super user list:", superUserIds);
     alert("Changes saved! Check the console for data.");
   }
 
@@ -97,6 +110,7 @@ export default function EditCollectionPage() {
     return allResponses.some(response => response.userId === userId && response.surveyId === surveyId);
   }
 
+  const assignedSuperUsers = allUsers.filter(u => superUserIds.includes(u.id));
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8">
@@ -143,119 +157,152 @@ export default function EditCollectionPage() {
          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Recipients</CardTitle>
+              <CardTitle className="text-sm font-medium">Respondents</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg font-bold">{users.length} Users</div>
-              <p className="text-xs text-muted-foreground">Assigned to this collection</p>
+              <div className="text-lg font-bold">{respondents.length} Users</div>
+              <p className="text-xs text-muted-foreground">Assigned to take the survey</p>
             </CardContent>
           </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Manage Assigned Users</CardTitle>
-          <CardDescription>
-            Add or remove users from this collection, and view their response status.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Add New Users</h3>
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Add User Manually</label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="User Name"
-                      />
-                      <Input
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="user@example.com"
-                        type="email"
-                      />
-                      <Button type="button" onClick={handleAddUser} variant="secondary">
-                        <UserPlus />
-                      </Button>
+      <div className="grid lg:grid-cols-2 gap-8">
+        <Card>
+            <CardHeader>
+            <CardTitle>Manage Respondents</CardTitle>
+            <CardDescription>
+                Add or remove respondents from this collection.
+            </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="text-lg font-medium">Add New Respondents</h3>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Add User Manually</label>
+                        <div className="flex items-center gap-2">
+                        <Input
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            placeholder="User Name"
+                        />
+                        <Input
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            placeholder="user@example.com"
+                            type="email"
+                        />
+                        <Button type="button" onClick={handleAddRespondent} variant="secondary">
+                            <UserPlus />
+                        </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Or Upload from Excel</label>
+                        <div className="flex items-center gap-2">
+                        <Input
+                            type="file"
+                            accept=".xlsx, .xls"
+                            onChange={handleFileUpload}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        />
+                        </div>
+                        <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
                     </div>
                 </div>
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Or Upload from Excel</label>
-                    <div className="flex items-center gap-2">
-                       <Input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={handleFileUpload}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
-                </div>
-            </div>
-          
-            <div>
-                <h4 className="text-sm font-medium mb-2">Users in Collection ({users.length})</h4>
-                 <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                         {users.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
-                                No users in this collection.
-                                </TableCell>
-                            </TableRow>
-                         ) : (
-                            users.map((user) => {
-                                const hasResponded = hasUserResponded(user.id, collection.surveyId);
-                                return (
-                                <TableRow key={user.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{user.name}</div>
-                                        <div className="text-xs text-muted-foreground">{user.email}</div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={hasResponded ? "default" : "outline"}>
-                                            {hasResponded ? "Responded" : "Pending"}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {collection.status === 'active' && !hasResponded && (
-                                            <Button variant="ghost" size="sm">
-                                                <Send className="mr-2 h-4 w-4"/>
-                                                Send Reminder
-                                            </Button>
-                                        )}
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleRemoveUser(user.id)}
-                                            disabled={hasResponded}
-                                        >
-                                            <X className="h-4 w-4 text-destructive"/>
-                                        </Button>
+            
+                <div>
+                    <h4 className="text-sm font-medium mb-2">Respondents in Collection ({respondents.length})</h4>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {respondents.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
+                                    No users in this collection.
                                     </TableCell>
                                 </TableRow>
-                                )
-                            })
-                         )}
-                        </TableBody>
-                    </Table>
-                 </div>
-            </div>
-            <Button onClick={handleSaveChanges} size="lg">Save Changes</Button>
-        </CardContent>
-      </Card>
+                            ) : (
+                                respondents.map((user) => {
+                                    const hasResponded = hasUserResponded(user.id, collection.surveyId);
+                                    return (
+                                    <TableRow key={user.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{user.name}</div>
+                                            <div className="text-xs text-muted-foreground">{user.email}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={hasResponded ? "default" : "outline"}>
+                                                {hasResponded ? "Responded" : "Pending"}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {collection.status === 'active' && !hasResponded && (
+                                                <Button variant="ghost" size="sm">
+                                                    <Send className="mr-2 h-4 w-4"/>
+                                                    Send Reminder
+                                                </Button>
+                                            )}
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleRemoveRespondent(user.id)}
+                                                disabled={hasResponded}
+                                            >
+                                                <X className="h-4 w-4 text-destructive"/>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                    )
+                                })
+                            )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ShieldCheck /> Manage Super Users</CardTitle>
+                <CardDescription>
+                    Super users can view results and perform analytics for this collection.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4 rounded-lg border p-4">
+                    <h4 className="text-sm font-medium mb-2">Select Super Users</h4>
+                    <div className="max-h-96 overflow-y-auto space-y-2">
+                        {allUsers.map(user => (
+                             <Label key={user.id} htmlFor={`super-user-${user.id}`} className="flex items-center justify-between p-3 bg-muted/30 rounded-md shadow-sm hover:bg-muted/60 cursor-pointer transition-colors">
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </div>
+                                <Checkbox
+                                    id={`super-user-${user.id}`}
+                                    checked={superUserIds.includes(user.id)}
+                                    onCheckedChange={() => handleSuperUserToggle(user.id)}
+                                />
+                            </Label>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-8">
+        <Button onClick={handleSaveChanges} size="lg">Save Changes</Button>
+      </div>
     </div>
   );
 }

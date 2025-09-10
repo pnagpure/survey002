@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -20,9 +21,11 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
-import { ArrowLeft, Upload, UserPlus, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { users as allUsers } from "@/lib/users"; // Import all users
+import { ArrowLeft, UserPlus, X, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -39,6 +42,7 @@ export default function CreateCollectionPage() {
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [users, setUsers] = useState<User[]>([]);
+  const [superUserIds, setSuperUserIds] = useState<string[]>([]);
   
   const router = useRouter();
 
@@ -59,6 +63,14 @@ export default function CreateCollectionPage() {
   const handleRemoveUser = (userId: string) => {
     setUsers((prev) => prev.filter(user => user.id !== userId));
   }
+  
+  const handleSuperUserToggle = (userId: string) => {
+    setSuperUserIds((prev) => 
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
 
   // Handle Excel file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,27 +115,8 @@ export default function CreateCollectionPage() {
       schedule,
       status: new Date(schedule) <= new Date() ? 'active' : 'pending',
       users, // In a real app, you would save user IDs
+      superUserIds,
     });
-
-    // Example of saving to Firestore (requires setup)
-    /*
-    const userIds = await Promise.all(
-        users.map(async (user) => {
-            // Check if user exists, if not, create them.
-            // For simplicity, we assume we create new users every time here.
-            const docRef = await addDoc(collection(db, 'users'), { name: user.name, email: user.email });
-            return docRef.id;
-        })
-    );
-
-    await addDoc(collection(db, 'surveyCollections'), {
-      name,
-      surveyId,
-      userIds,
-      schedule,
-      status: new Date(schedule) <= new Date() ? 'active' : 'pending',
-    });
-    */
 
     alert('Collection created successfully! Check the console for data.');
     router.push('/admin');
@@ -174,7 +167,7 @@ export default function CreateCollectionPage() {
             </div>
             
             <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Manage Users</h3>
+                <h3 className="text-lg font-medium">Manage Respondents</h3>
                  <div className="space-y-2">
                     <label className="text-sm font-medium">Add User Manually</label>
                     <div className="flex items-center gap-2">
@@ -208,7 +201,7 @@ export default function CreateCollectionPage() {
                 </div>
                 
                  <div>
-                    <h4 className="text-sm font-medium mb-2">Added Users ({users.length})</h4>
+                    <h4 className="text-sm font-medium mb-2">Added Respondents ({users.length})</h4>
                     <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
                         {users.length === 0 ? (
                         <p className="text-sm text-center text-muted-foreground py-4">No users added yet.</p>
@@ -222,6 +215,37 @@ export default function CreateCollectionPage() {
                             <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
                                 <X className="h-4 w-4 text-destructive"/>
                             </Button>
+                          </div>
+                        ))
+                        )}
+                    </div>
+                </div>
+            </div>
+            
+            <div className="space-y-4 rounded-lg border p-4">
+                <h3 className="text-lg font-medium flex items-center gap-2"><ShieldCheck /> Manage Super Users</h3>
+                <p className="text-sm text-muted-foreground">
+                    Super users can view results and perform analytics for this collection.
+                </p>
+                 <div>
+                    <h4 className="text-sm font-medium mb-2">Select Super Users</h4>
+                    <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
+                        {allUsers.length === 0 ? (
+                            <p className="text-sm text-center text-muted-foreground py-4">No users available in the system.</p>
+                        ) : (
+                        allUsers.map((user) => (
+                          <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
+                              <Label htmlFor={`super-user-${user.id}`} className="flex items-center gap-3 w-full cursor-pointer">
+                                <Checkbox
+                                    id={`super-user-${user.id}`}
+                                    checked={superUserIds.includes(user.id)}
+                                    onCheckedChange={() => handleSuperUserToggle(user.id)}
+                                />
+                                 <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </div>
+                              </Label>
                           </div>
                         ))
                         )}
