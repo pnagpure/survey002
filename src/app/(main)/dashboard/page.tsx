@@ -27,7 +27,7 @@ export default function DashboardPage() {
                 {new Date(survey.createdAt).toLocaleDateString()}
               </Badge>
             </CardContent>
-            <CardFooter className="flex gap-2">
+            <CardFooter className="flex flex-wrap gap-2">
               <Button asChild size="sm">
                 <Link href={`/surveys/${survey.id}/take`}>
                   <CheckSquare className="mr-2 h-4 w-4" />
