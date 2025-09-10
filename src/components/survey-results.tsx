@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
+// import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
 
 interface SentimentAnalysis {
     overall: 'Positive' | 'Negative' | 'Neutral' | 'Mixed';
@@ -527,14 +527,14 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
           </Card>
         )
       })}
-       <StatisticalAnalysisDialog
+       {/* <StatisticalAnalysisDialog
         isOpen={isStatAnalysisOpen}
         onOpenChange={setIsStatAnalysisOpen}
         survey={survey}
         responses={responses}
         question1={currentQuestionForStatAnalysis}
         testType="chi-square"
-       />
+       /> */}
     </div>
   );
 }
