@@ -220,6 +220,36 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     }, [survey, responses])
   );
   
+  const handleAnalyzeText = async (questionId: string, questionTitle: string, responses: string[]) => {
+    setProcessedResults(prev => ({
+        ...prev,
+        [questionId]: {...prev[questionId], isAnalyzing: true, textAnalysis: null }
+    }));
+
+    const formData = new FormData();
+    formData.append('question', questionTitle);
+    formData.append('responses', JSON.stringify(responses));
+
+    const result = await analyzeText(formData);
+
+    if (result.success) {
+       setProcessedResults(prev => ({
+        ...prev,
+        [questionId]: {...prev[questionId], isAnalyzing: false, textAnalysis: result.analysis }
+       }));
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Analysis Failed',
+        description: result.error,
+      });
+       setProcessedResults(prev => ({
+        ...prev,
+        [questionId]: {...prev[questionId], isAnalyzing: false }
+       }));
+    }
+  }
+
   // Auto-run analysis for text questions on initial load
     useMemo(() => {
         Object.keys(processedResults).forEach(qId => {
@@ -271,36 +301,6 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
 
     setIsGenerating(false);
   };
-  
-  const handleAnalyzeText = async (questionId: string, questionTitle: string, responses: string[]) => {
-    setProcessedResults(prev => ({
-        ...prev,
-        [questionId]: {...prev[questionId], isAnalyzing: true, textAnalysis: null }
-    }));
-
-    const formData = new FormData();
-    formData.append('question', questionTitle);
-    formData.append('responses', JSON.stringify(responses));
-
-    const result = await analyzeText(formData);
-
-    if (result.success) {
-       setProcessedResults(prev => ({
-        ...prev,
-        [questionId]: {...prev[questionId], isAnalyzing: false, textAnalysis: result.analysis }
-       }));
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Analysis Failed',
-        description: result.error,
-      });
-       setProcessedResults(prev => ({
-        ...prev,
-        [questionId]: {...prev[questionId], isAnalyzing: false }
-       }));
-    }
-  }
   
   if (responses.length === 0) {
     return (
@@ -527,3 +527,4 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     </div>
   );
 }
+
