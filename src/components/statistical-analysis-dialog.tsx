@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { runStatisticalTest } from '@/lib/actions';
 import type { Survey, SurveyResponse, Question } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
