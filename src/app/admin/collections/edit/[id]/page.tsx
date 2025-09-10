@@ -235,7 +235,13 @@ export default function EditCollectionPage() {
                                                 Send Reminder
                                             </Button>
                                         )}
-                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveUser(user.id)}
+                                            disabled={hasResponded}
+                                        >
                                             <X className="h-4 w-4 text-destructive"/>
                                         </Button>
                                     </TableCell>
