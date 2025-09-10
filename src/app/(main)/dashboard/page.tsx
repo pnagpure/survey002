@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink, BarChart2, CheckSquare, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import QuestionTypeTable from "@/components/question-type-table";
 
 export default function DashboardPage() {
   return (
@@ -55,6 +56,8 @@ export default function DashboardPage() {
             </CardContent>
          </Card>
       </div>
+      
+      <QuestionTypeTable />
     </div>
   );
 }
