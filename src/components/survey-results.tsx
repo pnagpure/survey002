@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { generateReport, analyzeText } from '@/lib/actions';
-import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags, Percent, Smile, Frown, Meh, ChevronDown } from 'lucide-react';
+import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags, Percent, Smile, Frown, Meh, ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
@@ -43,7 +43,7 @@ interface TextAnalysis {
   sentiment: SentimentAnalysis;
 }
 
-type AnalysisType = 'bar-chart' | 'text-analysis' | 'raw-text' | 'none';
+type AnalysisType = 'bar-chart' | 'pie-chart' | 'text-analysis' | 'raw-text' | 'none';
 
 interface ProcessedResults {
   [questionId: string]: {
@@ -76,6 +76,16 @@ const sentimentColors = {
     negative: 'hsl(var(--destructive))', // Red
 }
 
+const pieColors = [
+    'hsl(var(--chart-1))',
+    'hsl(var(--chart-2))',
+    'hsl(var(--chart-3))',
+    'hsl(var(--chart-4))',
+    'hsl(var(--chart-5))',
+    'hsl(var(--secondary))',
+];
+
+
 export function SurveyResults({ survey, responses }: { survey: Survey; responses: SurveyResponse[] }) {
   const [report, setReport] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -95,37 +105,44 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
             };
             const questionType = q.type;
 
-            if (questionType === 'rating') {
-                const ratingCounts = Array.from({length: (q.max ?? 5) - (q.min ?? 1) + 1}, (_, i) => (q.min ?? 1) + i).map(rating => ({
-                    name: `${rating} Star${rating > 1 ? 's' : ''}`,
-                    value: responses.filter(r => r.answers[q.id] === rating || String(r.answers[q.id]) === String(rating)).length,
-                }));
-                acc[q.id] = { ...common, type: 'rating', data: ratingCounts };
-            } else if (questionType === 'multiple-choice' && q.options) {
-                 const getAnswers = (r: SurveyResponse) => {
-                    const answer = r.answers[q.id];
-                    return Array.isArray(answer) ? answer : [answer];
-                };
-                const optionCounts = q.options.map(option => ({
-                    name: option,
-                    value: responses.flatMap(getAnswers).filter(ans => ans === option).length,
-                }));
-                acc[q.id] = { ...common, type: 'multiple-choice', data: optionCounts };
+            let data;
+            if (['rating', 'multiple-choice', 'yesNo', 'dropdown'].includes(questionType)) {
+                let counts: { [key: string]: number } = {};
+                if (questionType === 'rating') {
+                    counts = responses.reduce((c, r) => {
+                        const answer = r.answers[q.id];
+                        c[answer] = (c[answer] || 0) + 1;
+                        return c;
+                    }, {} as { [key: string]: number });
+                } else if (questionType === 'multiple-choice' && q.options) {
+                     const getAnswers = (r: SurveyResponse) => {
+                        const answer = r.answers[q.id];
+                        return Array.isArray(answer) ? answer : [answer];
+                    };
+                    counts = responses.flatMap(getAnswers).reduce((c, answer) => {
+                         c[answer] = (c[answer] || 0) + 1;
+                         return c;
+                    }, {} as { [key: string]: number });
+                } else if (questionType === 'yesNo') {
+                    counts = responses.reduce((c, r) => {
+                        const answer = r.answers[q.id];
+                        c[answer] = (c[answer] || 0) + 1;
+                        return c;
+                    }, {} as { [key: string]: number });
+                } else if (questionType === 'dropdown' && q.options) {
+                    counts = responses.reduce((c, r) => {
+                        const answer = r.answers[q.id];
+                        c[answer] = (c[answer] || 0) + 1;
+                        return c;
+                    }, {} as { [key: string]: number });
+                }
+                
+                data = Object.entries(counts).map(([name, value]) => ({ name, value }));
+
+                acc[q.id] = { ...common, type: questionType, data: data };
             } else if (questionType === 'text') {
                 const textAnswers = responses.map(r => r.answers[q.id]).filter(Boolean);
                 acc[q.id] = { ...common, type: 'text', data: textAnswers };
-            } else if (questionType === 'yesNo') {
-                 const yesNoCounts = ['Yes', 'No'].map(option => ({
-                    name: option,
-                    value: responses.filter(r => r.answers[q.id] === option).length,
-                }));
-                acc[q.id] = { ...common, type: 'yesNo', data: yesNoCounts };
-            } else if (questionType === 'dropdown' && q.options) {
-                const optionCounts = q.options.map(option => ({
-                    name: option,
-                    value: responses.filter(r => r.answers[q.id] === option).length,
-                }));
-                acc[q.id] = { ...common, type: 'dropdown', data: optionCounts };
             }
             // Add other question type processing here
             return acc;
@@ -208,17 +225,20 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     )
   }
   
-  const getAnalysisOptions = (type: string): { value: AnalysisType, label: string }[] => {
+  const getAnalysisOptions = (type: string): { value: AnalysisType, label: string, icon: React.ElementType }[] => {
     switch (type) {
         case 'rating':
         case 'multiple-choice':
         case 'yesNo':
         case 'dropdown':
-            return [{ value: 'bar-chart', label: 'Frequency Bar Chart' }];
+            return [
+                { value: 'bar-chart', label: 'Frequency Bar Chart', icon: BarChartIcon },
+                { value: 'pie-chart', label: 'Proportion Pie Chart', icon: PieChartIcon },
+            ];
         case 'text':
             return [
-                { value: 'text-analysis', label: 'AI Sentiment & Thematic Analysis' },
-                { value: 'raw-text', label: 'View Raw Responses' }
+                { value: 'text-analysis', label: 'AI Sentiment & Thematic Analysis', icon: Lightbulb },
+                { value: 'raw-text', label: 'View Raw Responses', icon: FileText }
             ];
         default:
             return [];
@@ -275,13 +295,14 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline">
-                        Choose Analysis
+                        Analyze
                         <ChevronDown className="ml-2 h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                         {analysisOptions.map(opt => (
                             <DropdownMenuItem key={opt.value} onClick={() => handleSetAnalysis(questionId, opt.value)}>
+                                <opt.icon className="mr-2 h-4 w-4" />
                                 {opt.label}
                             </DropdownMenuItem>
                         ))}
@@ -306,6 +327,26 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                             <LabelList dataKey="value" position="top" />
                         </Bar>
                     </BarChart>
+                    </ResponsiveContainer>
+                )}
+                 { result.selectedAnalysis === 'pie-chart' && result.data.length > 0 && (
+                     <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Tooltip cursor={{fill: 'hsl(var(--muted))'}} contentStyle={{backgroundColor: 'hsl(var(--card))'}}/>
+                            <Pie
+                                data={result.data}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={100}
+                                dataKey="value"
+                            >
+                                {result.data.map((entry: any, index: number) => (
+                                    <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                                ))}
+                            </Pie>
+                        </PieChart>
                     </ResponsiveContainer>
                 )}
                 {result.isAnalyzing && (
@@ -377,6 +418,11 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                         </CardContent>
                     </Card>
                 )}
+                 {(result.selectedAnalysis === 'bar-chart' || result.selectedAnalysis === 'pie-chart') && result.data.length === 0 && (
+                     <div className="text-center py-10 text-muted-foreground">
+                        <p>No data available for this visualization.</p>
+                    </div>
+                )}
             </CardContent>
           </Card>
         )
@@ -384,3 +430,5 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     </div>
   );
 }
+
+    
