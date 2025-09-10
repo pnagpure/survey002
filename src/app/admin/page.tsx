@@ -2,7 +2,7 @@ import { surveys, responses } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, MessageSquare, Users, BarChart2, Shield } from "lucide-react";
+import { FileText, MessageSquare, Users, Plus, Shield } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -20,11 +20,18 @@ export default function AdminPage() {
             </div>
             <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
           </div>
-           <Button asChild size="sm" className="ml-auto">
-                <Link href="/dashboard">
-                  Back to Dashboard
+           <div className="ml-auto flex items-center gap-2">
+             <Button asChild size="sm">
+                <Link href="/admin/surveys/create">
+                  <Plus className="mr-2 h-4 w-4"/> Create Survey
                 </Link>
               </Button>
+              <Button asChild size="sm" variant="outline">
+                  <Link href="/dashboard">
+                    Back to Dashboard
+                  </Link>
+                </Button>
+           </div>
       </header>
       <main className="flex-1 space-y-8 p-4 md:p-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

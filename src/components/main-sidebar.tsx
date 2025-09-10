@@ -34,12 +34,6 @@ export function MainSidebar() {
           </Link>
         </Button>
         <Button variant="ghost" className="justify-start gap-3" asChild>
-          <Link href="/surveys/create">
-            <PlusCircle className="h-5 w-5" />
-            New Survey
-          </Link>
-        </Button>
-        <Button variant="ghost" className="justify-start gap-3" asChild>
           <Link href="/admin">
             <Shield className="h-5 w-5" />
             Admin

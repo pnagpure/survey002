@@ -50,7 +50,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <Button asChild>
-                <Link href="/surveys/create"><Plus className="mr-2 h-4 w-4"/>Create Survey</Link>
+                <Link href="/admin/surveys/create"><Plus className="mr-2 h-4 w-4"/>Create Survey</Link>
               </Button>
             </CardContent>
          </Card>
