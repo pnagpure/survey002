@@ -27,11 +27,35 @@ const AnalyzeTextResponsesOutputSchema = z.object({
   summary: z
     .string()
     .describe(
-      'A concise summary of the main themes and sentiments found in the responses.'
+      'A concise summary of the main themes and overall sentiment found in the responses.'
     ),
   keywords: z
     .array(z.string())
     .describe('A list of the most important keywords or phrases mentioned.'),
+  sentiment: z
+    .object({
+      overall: z
+        .enum(['Positive', 'Negative', 'Neutral', 'Mixed'])
+        .describe('The overall sentiment of the responses.'),
+      positivePercentage: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe('The percentage of responses with a positive sentiment.'),
+      negativePercentage: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe('The percentage of responses with a negative sentiment.'),
+      neutralPercentage: z
+        .number()
+        .min(0)
+        .max(100)
+        .describe('The percentage of responses with a neutral sentiment.'),
+    })
+    .describe(
+      'A statistical breakdown of the sentiment across all responses.'
+    ),
 });
 
 export type AnalyzeTextResponsesOutput = z.infer<
@@ -50,13 +74,15 @@ const prompt = ai.definePrompt({
   output: {schema: AnalyzeTextResponsesOutputSchema},
   prompt: `You are an expert at analyzing qualitative data. You will be given a survey question and a list of text responses.
 
-Your task is to identify the main themes, summarize the overall sentiment, and extract the most important keywords from the responses.
+Your task is to identify the main themes, summarize the overall sentiment, and extract the most important keywords.
+
+In addition, perform a detailed sentiment analysis on the responses. Classify each response as 'Positive', 'Negative', or 'Neutral'. Then, calculate the percentage of total responses that fall into each category. The sum of percentages must equal 100. Determine an overall sentiment ('Positive', 'Negative', 'Neutral', or 'Mixed').
 
 Survey Question: {{{question}}}
 Responses:
 {{{responses}}}
 
-Provide a summary and a list of keywords.
+Provide a summary, a list of keywords, and the detailed sentiment analysis breakdown.
 `,
 });
 

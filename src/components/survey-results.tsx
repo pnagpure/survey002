@@ -12,17 +12,29 @@ import {
   Tooltip,
   ResponsiveContainer,
   LabelList,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { generateReport, analyzeText } from '@/lib/actions';
-import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags } from 'lucide-react';
+import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags, Percent, Smile, Frown, Meh } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
+
+interface SentimentAnalysis {
+    overall: 'Positive' | 'Negative' | 'Neutral' | 'Mixed';
+    positivePercentage: number;
+    negativePercentage: number;
+    neutralPercentage: number;
+}
 
 interface TextAnalysis {
   summary: string;
   keywords: string[];
+  sentiment: SentimentAnalysis;
 }
 
 interface ProcessedResults {
@@ -41,6 +53,12 @@ const icons: { [key: string]: React.ElementType } = {
     'multiple-choice': BarChartIcon,
     text: MessageSquare,
     // Add other types if needed
+}
+
+const sentimentColors = {
+    positive: 'hsl(var(--chart-1))', // Blue
+    neutral: 'hsl(var(--chart-2))',  // Yellow
+    negative: 'hsl(var(--destructive))', // Red
 }
 
 export function SurveyResults({ survey, responses }: { survey: Survey; responses: SurveyResponse[] }) {
@@ -175,6 +193,13 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
       {Object.keys(processedResults).map(questionId => {
         const result = processedResults[questionId];
         const Icon = result.icon;
+        
+        const sentimentData = result.textAnalysis ? [
+            { name: 'Positive', value: result.textAnalysis.sentiment.positivePercentage, fill: sentimentColors.positive },
+            { name: 'Negative', value: result.textAnalysis.sentiment.negativePercentage, fill: sentimentColors.negative },
+            { name: 'Neutral', value: result.textAnalysis.sentiment.neutralPercentage, fill: sentimentColors.neutral },
+        ] : [];
+        
         return (
           <Card key={questionId}>
             <CardHeader>
@@ -201,17 +226,42 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
                              <CardHeader>
                                  <CardTitle className="text-lg flex items-center gap-2"><Lightbulb className="text-accent"/>AI Analysis</CardTitle>
                              </CardHeader>
-                             <CardContent className="space-y-4">
+                             <CardContent className="space-y-6">
                                 <div>
                                     <h4 className="font-semibold flex items-center gap-2 mb-2"><Search/>Thematic Summary</h4>
                                     <p className="text-sm text-muted-foreground">{result.textAnalysis.summary}</p>
                                 </div>
-                                 <div>
-                                    <h4 className="font-semibold flex items-center gap-2 mb-2"><Tags/>Keywords</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.textAnalysis.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                                 <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="font-semibold flex items-center gap-2 mb-2"><Percent/>Sentiment Breakdown</h4>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-1/2">
+                                                 <ChartContainer config={{}} className="h-40">
+                                                    <PieChart>
+                                                        <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                                                        <Pie data={sentimentData} dataKey="value" nameKey="name" innerRadius={30} outerRadius={50} strokeWidth={2}>
+                                                            {sentimentData.map((entry) => (
+                                                                <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                                                            ))}
+                                                        </Pie>
+                                                    </PieChart>
+                                                </ChartContainer>
+                                            </div>
+                                            <div className="w-1/2 space-y-2 text-sm">
+                                                <div className="flex items-center gap-2"><Smile className="text-green-500"/> Positive: {result.textAnalysis.sentiment.positivePercentage.toFixed(1)}%</div>
+                                                <div className="flex items-center gap-2"><Frown className="text-red-500"/> Negative: {result.textAnalysis.sentiment.negativePercentage.toFixed(1)}%</div>
+                                                <div className="flex items-center gap-2"><Meh className="text-yellow-500"/> Neutral: {result.textAnalysis.sentiment.neutralPercentage.toFixed(1)}%</div>
+                                                <Badge>Overall: {result.textAnalysis.sentiment.overall}</Badge>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                    <div>
+                                        <h4 className="font-semibold flex items-center gap-2 mb-2"><Tags/>Keywords</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {result.textAnalysis.keywords.map(kw => <Badge key={kw} variant="secondary">{kw}</Badge>)}
+                                        </div>
+                                    </div>
+                                 </div>
                              </CardContent>
                          </Card>
                     )}
