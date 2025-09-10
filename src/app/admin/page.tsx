@@ -19,6 +19,27 @@ import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft } from "lucide-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+// Mock Firestore data (replace with actual Firestore queries)
+const surveyCollections = [
+  {
+    id: "collection1",
+    name: "Immediate Survey Group",
+    surveyId: "product-feedback-2024",
+    userIds: ["user-1"],
+    schedule: "2025-09-10",
+    status: "active",
+  },
+  {
+    id: "collection2",
+    name: "Future Survey Group",
+    surveyId: "workplace-satisfaction-q2",
+    userIds: ["user-2", "user-3"],
+    schedule: "2025-09-15",
+    status: "pending",
+  },
+];
+
+
 export default function AdminPage() {
   const totalSurveys = surveys.length;
   const totalResponses = responses.length;
@@ -165,6 +186,80 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* New User Management Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Manage Survey Collections</CardTitle>
+            <CardDescription>
+              Create and manage user groups for survey distribution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <Button asChild size="sm">
+                <Link href="/admin/collections/create">
+                  <Plus className="mr-2 h-4 w-4" /> Create New Collection
+                </Link>
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Survey</TableHead>
+                  <TableHead>Users</TableHead>
+                  <TableHead>Schedule</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {surveyCollections.map((collection) => {
+                  const survey = surveys.find(
+                    (s) => s.id === collection.surveyId
+                  );
+                  return (
+                    <TableRow key={collection.id}>
+                      <TableCell className="font-medium">
+                        {collection.name}
+                      </TableCell>
+                      <TableCell>
+                        {survey?.title || "Unknown Survey"}
+                      </TableCell>
+                      <TableCell>
+                        {collection.userIds.length} users
+                      </TableCell>
+                      <TableCell>{collection.schedule}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            collection.status === "active"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {collection.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                        >
+                          <Link href={`/admin/collections/edit/${collection.id}`}>
+                            Edit
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
