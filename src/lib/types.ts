@@ -19,6 +19,7 @@ export interface Survey {
 export interface SurveyResponse {
   id: string;
   surveyId: string;
+  userId: string;
   submittedAt: string;
   answers: Record<string, string | number>; // questionId -> answer
 }

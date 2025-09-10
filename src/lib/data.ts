@@ -62,6 +62,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp1',
     surveyId: 'product-feedback-2024',
+    userId: 'user-1',
     submittedAt: '2024-05-10T14:20:10Z',
     answers: {
       'q1-overall-satisfaction': 5,
@@ -73,6 +74,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp2',
     surveyId: 'product-feedback-2024',
+    userId: 'user-2',
     submittedAt: '2024-05-10T15:05:30Z',
     answers: {
       'q1-overall-satisfaction': 4,
@@ -84,6 +86,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp3',
     surveyId: 'product-feedback-2024',
+    userId: 'user-3',
     submittedAt: '2024-05-11T11:00:00Z',
     answers: {
       'q1-overall-satisfaction': 3,
@@ -95,6 +98,7 @@ export const responses: SurveyResponse[] = [
     {
     id: 'resp4',
     surveyId: 'product-feedback-2024',
+    userId: 'user-4',
     submittedAt: '2024-05-12T10:30:00Z',
     answers: {
       'q1-overall-satisfaction': 5,
@@ -108,6 +112,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp5',
     surveyId: 'workplace-satisfaction-q2',
+    userId: 'user-2',
     submittedAt: '2024-04-20T10:00:00Z',
     answers: {
       'q1-work-life-balance': 4,
@@ -118,6 +123,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp6',
     surveyId: 'workplace-satisfaction-q2',
+    userId: 'user-3',
     submittedAt: '2024-04-20T11:30:00Z',
     answers: {
       'q1-work-life-balance': 5,
@@ -128,6 +134,7 @@ export const responses: SurveyResponse[] = [
   {
     id: 'resp7',
     surveyId: 'workplace-satisfaction-q2',
+    userId: 'user-1',
     submittedAt: '2024-04-21T09:15:00Z',
     answers: {
       'q1-work-life-balance': 2,

@@ -2,17 +2,18 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { getSurveyCollectionById, getSurveyById } from '@/lib/data';
+import { getSurveyCollectionById, getSurveyById, responses as allResponses } from '@/lib/data';
 import { users as allUsers } from '@/lib/users';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, CheckCircle, Mail, User, Users, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -92,6 +93,10 @@ export default function EditCollectionPage() {
     alert("Changes saved! Check the console for data.");
   }
 
+  const hasUserResponded = (userId: string, surveyId: string) => {
+    return allResponses.some(response => response.userId === userId && response.surveyId === surveyId);
+  }
+
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8">
@@ -152,7 +157,7 @@ export default function EditCollectionPage() {
         <CardHeader>
           <CardTitle>Manage Assigned Users</CardTitle>
           <CardDescription>
-            Add or remove users from this collection.
+            Add or remove users from this collection, and view their response status.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -193,26 +198,54 @@ export default function EditCollectionPage() {
           
             <div>
                 <h4 className="text-sm font-medium mb-2">Users in Collection ({users.length})</h4>
-                <div className="max-h-60 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
-                    {users.length === 0 ? (
-                    <p className="text-sm text-center text-muted-foreground py-4">No users in this collection.</p>
-                    ) : (
-                    users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
-                        <div className="flex items-center gap-3">
-                           <User className="h-5 w-5 text-muted-foreground" />
-                           <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
-                            </div>
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
-                            <X className="h-4 w-4 text-destructive"/>
-                        </Button>
-                      </div>
-                    ))
-                    )}
-                </div>
+                 <div className="rounded-md border">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>User</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                         {users.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
+                                No users in this collection.
+                                </TableCell>
+                            </TableRow>
+                         ) : (
+                            users.map((user) => {
+                                const hasResponded = hasUserResponded(user.id, collection.surveyId);
+                                return (
+                                <TableRow key={user.id}>
+                                    <TableCell>
+                                        <div className="font-medium">{user.name}</div>
+                                        <div className="text-xs text-muted-foreground">{user.email}</div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={hasResponded ? "default" : "outline"}>
+                                            {hasResponded ? "Responded" : "Pending"}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {collection.status === 'active' && !hasResponded && (
+                                            <Button variant="ghost" size="sm">
+                                                <Send className="mr-2 h-4 w-4"/>
+                                                Send Reminder
+                                            </Button>
+                                        )}
+                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
+                                            <X className="h-4 w-4 text-destructive"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                                )
+                            })
+                         )}
+                        </TableBody>
+                    </Table>
+                 </div>
             </div>
             <Button onClick={handleSaveChanges} size="lg">Save Changes</Button>
         </CardContent>
