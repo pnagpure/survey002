@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -32,7 +31,7 @@ interface StatisticalAnalysisDialogProps {
   testType: 'chi-square'; // Expandable for other tests
 }
 
-export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, responses, question1, testType }: StatisticalAnalysisDialogProps) {
+export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, responses, question1, testType }: StatisticalAnalysisDialogProps) {
   const [question2Id, setQuestion2Id] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -52,7 +51,10 @@ export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, respon
     setResult(null);
 
     const question2 = survey.questions.find(q => q.id === question2Id);
-    if (!question2) return;
+    if (!question2) {
+      setIsLoading(false);
+      return;
+    }
 
     const testData = {
         testType,
