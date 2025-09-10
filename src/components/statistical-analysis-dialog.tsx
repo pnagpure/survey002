@@ -21,7 +21,6 @@ import { runStatisticalTest, StatsResult } from '@/lib/actions';
 import type { Survey, SurveyResponse, Question } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, TestTube2, BrainCircuit, Check, X, Sigma } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 
 interface StatisticalAnalysisDialogProps {
   isOpen: boolean;
