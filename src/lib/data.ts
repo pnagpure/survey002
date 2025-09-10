@@ -1,4 +1,5 @@
 import type { Survey, SurveyResponse } from './types';
+import type { User } from './types';
 
 export const surveys: Survey[] = [
   {
@@ -136,10 +137,51 @@ export const responses: SurveyResponse[] = [
   },
 ];
 
+export interface SurveyCollection {
+  id: string;
+  name: string;
+  surveyId: string;
+  userIds: string[];
+  schedule: string;
+  status: "active" | "pending";
+}
+
+export const surveyCollections: SurveyCollection[] = [
+  {
+    id: "collection1",
+    name: "Q3 Product Feedback",
+    surveyId: "product-feedback-2024",
+    userIds: ["user-1", "user-2", "user-4"],
+    schedule: "2024-09-10",
+    status: "active",
+  },
+  {
+    id: "collection2",
+    name: "Q2 Employee Engagement",
+    surveyId: "workplace-satisfaction-q2",
+    userIds: ["user-2", "user-3"],
+    schedule: "2024-09-15",
+    status: "pending",
+  },
+   {
+    id: "collection3",
+    name: "Alpha Testers - New Feature",
+    surveyId: "product-feedback-2024",
+    userIds: ["user-1", "user-3", "user-4"],
+    schedule: "2024-10-01",
+    status: "pending",
+  },
+];
+
+
 export const getSurveyById = (id: string): Survey | undefined => {
   return surveys.find(survey => survey.id === id);
 }
 
 export const getResponsesBySurveyId = (surveyId: string): SurveyResponse[] => {
   return responses.filter(response => response.surveyId === surveyId);
+}
+
+export const getSurveyCollectionById = (id: string): SurveyCollection | undefined => {
+  return surveyCollections.find(collection => collection.id === id);
 }

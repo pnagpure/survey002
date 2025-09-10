@@ -28,3 +28,12 @@ export interface User {
     name: string;
     email: string;
 }
+
+export interface SurveyCollection {
+  id: string;
+  name: string;
+  surveyId: string;
+  userIds: string[];
+  schedule: string;
+  status: 'active' | 'pending';
+}
