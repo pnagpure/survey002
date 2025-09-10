@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck, MessageSquare, Pencil } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck, MessageSquare, Pencil, Edit, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import React from 'react';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,9 @@ export default function EditCollectionPage() {
   }
 
   const survey = getSurveyById(collection.surveyId);
+
+  // State for edit mode
+  const [isEditMode, setIsEditMode] = React.useState(false);
 
   // State for editable fields
   const [respondents, setRespondents] = React.useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
@@ -126,6 +129,18 @@ export default function EditCollectionPage() {
     console.log("Updated respondent list:", respondents.map(u => u.id));
     console.log("Updated super user list:", superUserIds);
     alert("Changes saved! Check the console for data.");
+    setIsEditMode(false); // Switch back to preview mode
+  }
+
+  const handleCancel = () => {
+      // Reset state to original collection data
+      setRespondents(allUsers.filter(u => collection.userIds.includes(u.id)));
+      setSuperUserIds(collection.superUserIds || []);
+      setCohortType(collection.cohortType || '');
+      setLogoDataUri(collection.logoDataUri || '');
+      setSponsorMessage(collection.sponsorMessage || '');
+      setSponsorSignature(collection.sponsorSignature || '');
+      setIsEditMode(false);
   }
 
   const hasUserResponded = (userId: string, surveyId: string) => {
@@ -139,16 +154,24 @@ export default function EditCollectionPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Collection: {collection.name}</h1>
-          <p className="text-muted-foreground">
-            View and manage this survey collection.
+          <p className="text-muted-foreground flex items-center gap-2">
+            {isEditMode ? <><Edit className="h-4 w-4 text-primary" /> Now in Edit Mode</> : <><Eye className="h-4 w-4" /> Previewing Collection</>}
           </p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/admin">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Admin
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+            <Button asChild variant="outline">
+            <Link href="/admin">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Admin
+            </Link>
+            </Button>
+            {!isEditMode && (
+                <Button onClick={() => setIsEditMode(true)}>
+                    <Edit className="mr-2 h-4 w-4"/>
+                    Edit Collection
+                </Button>
+            )}
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
@@ -194,44 +217,46 @@ export default function EditCollectionPage() {
             <CardHeader>
             <CardTitle>Manage Respondents</CardTitle>
             <CardDescription>
-                Add or remove respondents from this collection.
+                {isEditMode ? "Add or remove respondents from this collection." : "View respondents assigned to this collection."}
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="space-y-4 rounded-lg border p-4">
-                    <h3 className="text-lg font-medium">Add New Respondents</h3>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Add User Manually</label>
-                        <div className="flex items-center gap-2">
-                        <Input
-                            value={newUserName}
-                            onChange={(e) => setNewUserName(e.target.value)}
-                            placeholder="User Name"
-                        />
-                        <Input
-                            value={newUserEmail}
-                            onChange={(e) => setNewUserEmail(e.target.value)}
-                            placeholder="user@example.com"
-                            type="email"
-                        />
-                        <Button type="button" onClick={handleAddRespondent} variant="secondary">
-                            <UserPlus />
-                        </Button>
+                {isEditMode && (
+                    <div className="space-y-4 rounded-lg border p-4 bg-muted/20">
+                        <h3 className="text-lg font-medium">Add New Respondents</h3>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Add User Manually</label>
+                            <div className="flex items-center gap-2">
+                            <Input
+                                value={newUserName}
+                                onChange={(e) => setNewUserName(e.target.value)}
+                                placeholder="User Name"
+                            />
+                            <Input
+                                value={newUserEmail}
+                                onChange={(e) => setNewUserEmail(e.target.value)}
+                                placeholder="user@example.com"
+                                type="email"
+                            />
+                            <Button type="button" onClick={handleAddRespondent} variant="secondary">
+                                <UserPlus />
+                            </Button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Or Upload from Excel</label>
+                            <div className="flex items-center gap-2">
+                            <Input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                onChange={handleFileUpload}
+                                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                            />
+                            </div>
+                            <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Or Upload from Excel</label>
-                        <div className="flex items-center gap-2">
-                        <Input
-                            type="file"
-                            accept=".xlsx, .xls"
-                            onChange={handleFileUpload}
-                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                        />
-                        </div>
-                        <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
-                    </div>
-                </div>
+                )}
             
                 <div>
                     <h4 className="text-sm font-medium mb-2">Respondents in Collection ({respondents.length})</h4>
@@ -267,20 +292,22 @@ export default function EditCollectionPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {collection.status === 'active' && !hasResponded && (
-                                                <Button variant="ghost" size="sm">
+                                                <Button variant="ghost" size="sm" disabled={!isEditMode}>
                                                     <Send className="mr-2 h-4 w-4"/>
                                                     Send Reminder
                                                 </Button>
                                             )}
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleRemoveRespondent(user.id)}
-                                                disabled={hasResponded}
-                                            >
-                                                <X className="h-4 w-4 text-destructive"/>
-                                            </Button>
+                                            {isEditMode && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRemoveRespondent(user.id)}
+                                                    disabled={hasResponded}
+                                                >
+                                                    <X className="h-4 w-4 text-destructive"/>
+                                                </Button>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                     )
@@ -297,13 +324,13 @@ export default function EditCollectionPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Building2 /> Branding</CardTitle>
                     <CardDescription>
-                        Customize the welcome page for this collection.
+                        {isEditMode ? "Customize the welcome page for this collection." : "Current welcome page configuration."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Cohort Type</Label>
-                        <Select onValueChange={(value) => setCohortType(value)} value={cohortType}>
+                        <Select onValueChange={(value) => setCohortType(value)} value={cohortType} disabled={!isEditMode}>
                             <SelectTrigger>
                             <SelectValue placeholder="Select cohort type" />
                             </SelectTrigger>
@@ -322,6 +349,7 @@ export default function EditCollectionPage() {
                             accept="image/*"
                             onChange={handleLogoUpload}
                             className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                            disabled={!isEditMode}
                         />
                         {logoDataUri && <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="mt-2 rounded-lg object-contain" />}
                     </div>
@@ -332,6 +360,7 @@ export default function EditCollectionPage() {
                             onChange={(e) => setSponsorMessage(e.target.value)}
                             placeholder="e.g., Your feedback is invaluable to us..."
                             rows={4}
+                            disabled={!isEditMode}
                         />
                     </div>
                     <div className="space-y-2">
@@ -340,6 +369,7 @@ export default function EditCollectionPage() {
                             value={sponsorSignature}
                             onChange={(e) => setSponsorSignature(e.target.value)}
                             placeholder="e.g., John Doe, CEO of ExampleCorp"
+                             disabled={!isEditMode}
                         />
                     </div>
                 </CardContent>
@@ -354,7 +384,7 @@ export default function EditCollectionPage() {
                 <CardContent>
                     <div className="max-h-96 overflow-y-auto space-y-2">
                         {allUsers.map(user => (
-                             <Label key={user.id} htmlFor={`super-user-${user.id}`} className="flex items-center justify-between p-3 bg-muted/30 rounded-md shadow-sm hover:bg-muted/60 cursor-pointer transition-colors">
+                             <Label key={user.id} htmlFor={`super-user-${user.id}`} className={`flex items-center justify-between p-3 bg-muted/30 rounded-md shadow-sm transition-colors ${isEditMode ? 'hover:bg-muted/60 cursor-pointer' : 'cursor-default'}`}>
                                 <div>
                                     <p className="font-medium">{user.name}</p>
                                     <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -363,6 +393,7 @@ export default function EditCollectionPage() {
                                     id={`super-user-${user.id}`}
                                     checked={superUserIds.includes(user.id)}
                                     onCheckedChange={() => handleSuperUserToggle(user.id)}
+                                    disabled={!isEditMode}
                                 />
                             </Label>
                         ))}
@@ -372,9 +403,14 @@ export default function EditCollectionPage() {
         </div>
       </div>
 
-      <div className="mt-8">
-        <Button onClick={handleSaveChanges} size="lg">Save Changes</Button>
-      </div>
+       {isEditMode && (
+        <div className="mt-8 flex gap-2">
+            <Button onClick={handleSaveChanges} size="lg">Save Changes</Button>
+            <Button onClick={handleCancel} size="lg" variant="outline">Cancel</Button>
+        </div>
+       )}
     </div>
   );
 }
+
+    
