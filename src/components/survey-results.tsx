@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-import { StatisticalAnalysisDialog } from './statistical-analysis-dialog';
+import StatisticalAnalysisDialog from './statistical-analysis-dialog';
 
 interface SentimentAnalysis {
     overall: 'Positive' | 'Negative' | 'Neutral' | 'Mixed';

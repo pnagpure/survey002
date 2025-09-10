@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { runStatisticalTest } from '@/lib/actions';
 import type { Survey, SurveyResponse, Question } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TestTube2, BrainCircuit, Check, X } from 'lucide-react';
+import { Loader2, TestTube2, BrainCircuit, Check, X, Sigma } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface StatisticalAnalysisDialogProps {
@@ -125,7 +126,7 @@ export default function StatisticalAnalysisDialog({
             <div className={`flex items-center gap-2 p-3 rounded-lg ${isSignificant ? 'bg-green-100 dark:bg-green-900/50' : 'bg-amber-100 dark:bg-amber-900/50'}`}>
                 {isSignificant ? <Check className="h-5 w-5 text-green-700 dark:text-green-400"/> : <X className="h-5 w-5 text-amber-700 dark:text-amber-500"/>}
                 <p className="text-sm font-medium">
-                    Result is {isSignificant ? '' : 'not '}statistically significant at p < 0.05.
+                    Result is {isSignificant ? '' : 'not '}statistically significant at p &lt; 0.05.
                 </p>
             </div>
             <div>
@@ -217,3 +218,5 @@ export default function StatisticalAnalysisDialog({
     </Dialog>
   );
 }
+
+    
