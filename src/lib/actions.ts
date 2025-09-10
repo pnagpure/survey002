@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { getResponsesBySurveyId, getSurveyById } from './data';
 import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
+import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
 import { revalidatePath } from 'next/cache';
 
 export async function submitResponse(surveyId: string, data: unknown) {
@@ -50,5 +51,32 @@ export async function generateReport(formData: FormData) {
     }
     console.error(e);
     return { success: false, error: 'Failed to generate report.' };
+  }
+}
+
+const analyzeTextSchema = z.object({
+  question: z.string(),
+  responses: z.string(),
+});
+
+export async function analyzeText(formData: FormData) {
+  try {
+    const { question, responses } = analyzeTextSchema.parse({
+      question: formData.get('question'),
+      responses: formData.get('responses'),
+    });
+
+    const result = await analyzeTextResponses({
+      question,
+      responses,
+    });
+
+    return { success: true, analysis: result };
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return { success: false, error: 'Invalid input.' };
+    }
+    console.error(e);
+    return { success: false, error: 'Failed to analyze text responses.' };
   }
 }
