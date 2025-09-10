@@ -1,11 +1,27 @@
 
-export type QuestionType = 'text' | 'multiple-choice' | 'rating';
+export type QuestionType =
+  | 'text'
+  | 'multiple-choice'
+  | 'rating'
+  | 'number'
+  | 'yesNo'
+  | 'dropdown'
+  | 'matrix'
+  | 'date'
+  | 'file'
+  | 'ranking';
 
 export interface Question {
   id: string;
   text: string;
   type: QuestionType;
   options?: string[];
+  // For matrix questions
+  rows?: string[];
+  columns?: string[];
+  // For rating and number questions
+  min?: number;
+  max?: number;
 }
 
 export interface Survey {
@@ -21,7 +37,7 @@ export interface SurveyResponse {
   surveyId: string;
   userId: string;
   submittedAt: string;
-  answers: Record<string, string | number>; // questionId -> answer
+  answers: Record<string, any>; // questionId -> answer, can be string, number, string[], etc.
 }
 
 export interface User {

@@ -55,6 +55,73 @@ export const surveys: Survey[] = [
       },
     ],
   },
+  {
+    id: 'comprehensive-template',
+    title: 'Comprehensive Survey Template',
+    description: 'A template showcasing all available question types for advanced analysis.',
+    createdAt: '2024-09-12T00:00:00Z',
+    questions: [
+      {
+        id: 'q-text',
+        text: 'What are your career goals for the next five years?',
+        type: 'text',
+      },
+      {
+        id: 'q-multiple-choice',
+        text: 'Which of the following social media platforms do you use daily?',
+        type: 'multiple-choice',
+        options: ['Facebook', 'Twitter', 'Instagram', 'LinkedIn', 'TikTok'],
+      },
+      {
+        id: 'q-rating',
+        text: 'How would you rate our customer support?',
+        type: 'rating',
+        min: 1,
+        max: 5,
+      },
+      {
+        id: 'q-number',
+        text: 'How many hours per week do you dedicate to professional development?',
+        type: 'number',
+        min: 0,
+        max: 80,
+      },
+      {
+        id: 'q-yesNo',
+        text: 'Have you ever attended one of our company webinars?',
+        type: 'yesNo',
+      },
+      {
+        id: 'q-dropdown',
+        text: 'What is your primary department?',
+        type: 'dropdown',
+        options: ['Engineering', 'Sales', 'Marketing', 'Human Resources', 'Support'],
+      },
+      {
+        id: 'q-matrix',
+        text: 'Please rate your satisfaction with the following aspects of your job:',
+        type: 'matrix',
+        rows: ['Workload', 'Compensation', 'Team Culture', 'Management'],
+        columns: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+      },
+      {
+        id: 'q-date',
+        text: 'When was your last performance review?',
+        type: 'date',
+      },
+      {
+        id: 'q-file',
+        text: 'Please upload your latest project proposal document.',
+        type: 'file',
+      },
+      {
+        id: 'q-ranking',
+        text: 'Rank the following employee benefits in order of importance (1 = most important).',
+        type: 'ranking',
+        options: ['Health Insurance', 'Remote Work Options', 'Paid Time Off', 'Retirement Plan'],
+      },
+    ],
+  },
 ];
 
 export const responses: SurveyResponse[] = [
@@ -142,6 +209,35 @@ export const responses: SurveyResponse[] = [
       'q3-communication': 'Not effective',
     },
   },
+  // Responses for Comprehensive Survey Template
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `c-resp${i + 1}`,
+    surveyId: 'comprehensive-template',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
+    answers: {
+      'q-text': `My goal is to achieve a leadership position within the ${['Engineering', 'Sales', 'Marketing'][i % 3]} department.`,
+      'q-multiple-choice': ['Facebook', 'LinkedIn', 'Instagram'][i % 3],
+      'q-rating': (i % 5) + 1,
+      'q-number': 5 + (i % 6),
+      'q-yesNo': i % 2 === 0 ? 'Yes' : 'No',
+      'q-dropdown': ['Engineering', 'Sales', 'Marketing', 'Human Resources', 'Support'][i % 5],
+      'q-matrix': {
+        Workload: ['Neutral', 'Satisfied', 'Very Satisfied'][i % 3],
+        Compensation: ['Dissatisfied', 'Neutral', 'Satisfied'][i % 3],
+        'Team Culture': ['Satisfied', 'Very Satisfied', 'Neutral'][i % 3],
+        Management: ['Very Dissatisfied', 'Dissatisfied', 'Neutral'][i % 3],
+      },
+      'q-date': `2024-0${(i % 6) + 1}-15`,
+      'q-file': `proposal_v${i + 1}.pdf`,
+      'q-ranking': {
+        'Health Insurance': (i % 4) + 1,
+        'Remote Work Options': ((i + 1) % 4) + 1,
+        'Paid Time Off': ((i + 2) % 4) + 1,
+        'Retirement Plan': ((i + 3) % 4) + 1,
+      },
+    },
+  })),
 ];
 
 export interface SurveyCollection {
@@ -178,6 +274,14 @@ export const surveyCollections: SurveyCollection[] = [
     schedule: "2024-10-01",
     status: "pending",
   },
+  {
+    id: "collection4",
+    name: "Annual Comprehensive Review",
+    surveyId: "comprehensive-template",
+    userIds: ["user-1", "user-2", "user-3", "user-4"],
+    schedule: "2024-11-01",
+    status: "pending",
+  }
 ];
 
 
