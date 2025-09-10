@@ -32,7 +32,7 @@ interface StatisticalAnalysisDialogProps {
   testType: 'chi-square' | 'descriptive';
 }
 
-export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, responses, question1, testType }: StatisticalAnalysisDialogProps) {
+export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, responses, question1, testType }: StatisticalAnalysisDialogProps) {
   const [question2Id, setQuestion2Id] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<StatsResult['result'] | null>(null);
@@ -70,8 +70,9 @@ export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, respon
     const testData: any = {
       testType,
       responses,
-      ...(testType === 'descriptive' && { questionId: question1.id }),
-      ...(testType === 'chi-square' && { question1, question2 }),
+      questionId: question1.id, // Pass for both descriptive and as q1
+      question1: question1,
+      question2: question2,
     };
     
     try {
@@ -100,9 +101,9 @@ export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, respon
     q.id !== question1?.id && ['multiple-choice', 'yesNo', 'dropdown'].includes(q.type)
   );
 
-  const renderChiSquareResults = () => {
-    if (!result?.chiSquare) return null;
-    const { statistic, pValue, isSignificant, interpretation } = result.chiSquare;
+  const renderChiSquareResults = (res: NonNullable<StatsResult['result']>) => {
+    if (!res?.chiSquare) return null;
+    const { statistic, pValue, isSignificant, interpretation } = res.chiSquare;
     return (
         <>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -129,9 +130,9 @@ export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, respon
     )
   }
 
-  const renderDescriptiveResults = () => {
-      if (!result) return null;
-      const { mean, median, mode, range } = result;
+  const renderDescriptiveResults = (res: NonNullable<StatsResult['result']>) => {
+      if (!res) return null;
+      const { mean, median, mode, range } = res;
       return (
            <div className="grid grid-cols-2 gap-4 text-sm">
                 {mean !== undefined && <div className="p-3 bg-muted/50 rounded-lg"><span className="text-muted-foreground block">Mean</span><span className="font-bold text-xl">{mean.toFixed(2)}</span></div>}
@@ -203,7 +204,7 @@ export function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, respon
         {result && (
           <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold">Analysis Results</h3>
-            {testType === 'chi-square' ? renderChiSquareResults() : renderDescriptiveResults()}
+            {testType === 'chi-square' ? renderChiSquareResults(result) : renderDescriptiveResults(result)}
           </div>
         )}
       </DialogContent>
