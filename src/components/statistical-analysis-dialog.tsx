@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,10 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from '@/components/ui/button';
-import { runStatisticalTest, StatsResult } from '@/lib/actions';
+import { runStatisticalTest } from '@/lib/actions';
 import type { Survey, SurveyResponse, Question } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, TestTube2, BrainCircuit, Check, X, Sigma } from 'lucide-react';
+import { Loader2, TestTube2, BrainCircuit, Check, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface StatisticalAnalysisDialogProps {
   isOpen: boolean;
@@ -31,10 +31,17 @@ interface StatisticalAnalysisDialogProps {
   testType: 'chi-square' | 'descriptive';
 }
 
-export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey, responses, question1, testType }: StatisticalAnalysisDialogProps) {
+export default function StatisticalAnalysisDialog({
+  isOpen,
+  onOpenChange,
+  survey,
+  responses,
+  question1,
+  testType,
+}: StatisticalAnalysisDialogProps) {
   const [question2Id, setQuestion2Id] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<StatsResult['result'] | null>(null);
+  const [result, setResult] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -100,7 +107,7 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
     q.id !== question1?.id && ['multiple-choice', 'yesNo', 'dropdown'].includes(q.type)
   );
 
-  const renderChiSquareResults = (res: NonNullable<StatsResult['result']>) => {
+  const renderChiSquareResults = (res: any) => {
     if (!res?.chiSquare) return null;
     const { statistic, pValue, isSignificant, interpretation } = res.chiSquare;
     return (
@@ -129,7 +136,7 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
     )
   }
 
-  const renderDescriptiveResults = (res: NonNullable<StatsResult['result']>) => {
+  const renderDescriptiveResults = (res: any) => {
       if (!res) return null;
       const { mean, median, mode, range } = res;
       return (
