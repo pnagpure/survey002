@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Survey, SurveyResponse } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
@@ -211,8 +210,6 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
             } else if (questionType === 'text') {
                 const textAnswers = responses.map(r => r.answers[q.id]).filter(Boolean);
                 acc[q.id] = { ...common, type: 'text', data: textAnswers, selectedAnalysis: 'text-analysis' };
-                // Automatically run text analysis for text questions
-                // handleAnalyzeText(q.id, q.text, textAnswers);
             }
             // Add other question type processing here
             return acc;
@@ -251,7 +248,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
   }
 
   // Auto-run analysis for text questions on initial load
-    useMemo(() => {
+    useEffect(() => {
         Object.keys(processedResults).forEach(qId => {
             const result = processedResults[qId];
             if (result.type === 'text' && !result.textAnalysis && !result.isAnalyzing) {
@@ -527,4 +524,3 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     </div>
   );
 }
-
