@@ -1,3 +1,4 @@
+
 import type { Survey, SurveyResponse } from './types';
 import type { User } from './types';
 
@@ -67,10 +68,18 @@ export const surveys: Survey[] = [
         type: 'text',
       },
       {
-        id: 'q-multiple-choice',
+        id: 'q-multiple-choice-single',
         text: 'Which of the following social media platforms do you use daily?',
         type: 'multiple-choice',
+        multiple: false,
         options: ['Facebook', 'Twitter', 'Instagram', 'LinkedIn', 'TikTok'],
+      },
+       {
+        id: 'q-multiple-choice-multi',
+        text: 'Which devices do you own?',
+        type: 'multiple-choice',
+        multiple: true,
+        options: ['Smartphone', 'Laptop', 'Tablet', 'Smartwatch'],
       },
       {
         id: 'q-rating',
@@ -113,12 +122,154 @@ export const surveys: Survey[] = [
         id: 'q-file',
         text: 'Please upload your latest project proposal document.',
         type: 'file',
+        accept: 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       },
       {
         id: 'q-ranking',
         text: 'Rank the following employee benefits in order of importance (1 = most important).',
         type: 'ranking',
         options: ['Health Insurance', 'Remote Work Options', 'Paid Time Off', 'Retirement Plan'],
+      },
+    ],
+  },
+   // --- New Surveys for Each Question Type ---
+  {
+    id: 'text-input-survey',
+    title: 'Text Input Survey: Customer Service Feedback',
+    description: 'Provide detailed feedback about your experience.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-text-feedback',
+        text: 'Please describe your recent experience with our customer service team.',
+        type: 'text',
+      },
+    ],
+  },
+  {
+    id: 'multiple-choice-survey',
+    title: 'Multiple Choice Survey: Favorite Social Media',
+    description: 'Help us understand your social media preferences.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-mc-platform',
+        text: 'What is your most used social media platform?',
+        type: 'multiple-choice',
+        options: ['Facebook', 'Twitter', 'Instagram', 'LinkedIn', 'TikTok'],
+      },
+    ],
+  },
+  {
+    id: 'rating-scale-survey',
+    title: 'Rating Scale Survey: Website Usability',
+    description: 'Rate your experience using our new website.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-rating-website',
+        text: 'How would you rate the usability of our new website?',
+        type: 'rating',
+        min: 1,
+        max: 5,
+      },
+    ],
+  },
+  {
+    id: 'numerical-input-survey',
+    title: 'Numerical Input Survey: Weekly Work Hours',
+    description: 'Tell us about your work schedule.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-number-hours',
+        text: 'How many hours do you typically work in a week?',
+        type: 'number',
+        min: 0,
+        max: 100,
+      },
+    ],
+  },
+  {
+    id: 'yes-no-survey',
+    title: 'Yes/No Survey: Feature Adoption',
+    description: 'A quick question about our new feature.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-yesno-feature',
+        text: 'Have you used our new AI-powered reporting feature?',
+        type: 'yesNo',
+      },
+    ],
+  },
+  {
+    id: 'dropdown-survey',
+    title: 'Dropdown Survey: Primary Device',
+    description: 'Let us know your primary device for work.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-dropdown-device',
+        text: 'What is your primary device for work?',
+        type: 'dropdown',
+        options: ['Laptop', 'Desktop', 'Tablet', 'Smartphone'],
+      },
+    ],
+  },
+  {
+    id: 'matrix-survey',
+    title: 'Matrix/Grid Survey: Product Satisfaction',
+    description: 'Rate your satisfaction with different aspects of our product.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-matrix-product',
+        text: 'Please rate your satisfaction with the following product aspects:',
+        type: 'matrix',
+        rows: ['Performance', 'Features', 'Design', 'Reliability'],
+        columns: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'],
+      },
+    ],
+  },
+  {
+    id: 'date-picker-survey',
+    title: 'Date Picker Survey: Last Purchase Date',
+    description: 'Help us understand your purchasing habits.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-date-purchase',
+        text: 'When did you last purchase a product from us?',
+        type: 'date',
+      },
+    ],
+  },
+  {
+    id: 'file-upload-survey',
+    title: 'File Upload Survey: Resume Submission',
+    description: 'Submit your resume for our talent pool.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-file-resume',
+        text: 'Please upload your resume in PDF format.',
+        type: 'file',
+        accept: 'application/pdf'
+      },
+    ],
+  },
+  {
+    id: 'ranking-survey',
+    title: 'Ranking Survey: Feature Priority',
+    description: 'Help us prioritize which features to build next.',
+    createdAt: '2024-09-15T00:00:00Z',
+    questions: [
+      {
+        id: 'q-ranking-features',
+        text: 'Rank the following features in order of importance to you (1 = most important).',
+        type: 'ranking',
+        options: ['Dark Mode', 'Mobile App', 'Offline Access', 'Integrations'],
       },
     ],
   },
@@ -217,7 +368,8 @@ export const responses: SurveyResponse[] = [
     submittedAt: new Date(Date.now() - (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
     answers: {
       'q-text': `My goal is to achieve a leadership position within the ${['Engineering', 'Sales', 'Marketing'][i % 3]} department.`,
-      'q-multiple-choice': ['Facebook', 'LinkedIn', 'Instagram'][i % 3],
+      'q-multiple-choice-single': ['Facebook', 'LinkedIn', 'Instagram'][i % 3],
+      'q-multiple-choice-multi': [['Smartphone', 'Laptop'], ['Tablet', 'Smartwatch'], ['Laptop'], ['Smartphone', 'Laptop', 'Tablet']][i % 4],
       'q-rating': (i % 5) + 1,
       'q-number': 5 + (i % 6),
       'q-yesNo': i % 2 === 0 ? 'Yes' : 'No',
@@ -228,13 +380,119 @@ export const responses: SurveyResponse[] = [
         'Team Culture': ['Satisfied', 'Very Satisfied', 'Neutral'][i % 3],
         Management: ['Very Dissatisfied', 'Dissatisfied', 'Neutral'][i % 3],
       },
-      'q-date': `2024-0${(i % 6) + 1}-15`,
+      'q-date': new Date(Date.now() - (i + 1) * 30 * 24 * 60 * 60 * 1000), // a date in the last few months
       'q-file': `proposal_v${i + 1}.pdf`,
       'q-ranking': {
         'Health Insurance': (i % 4) + 1,
         'Remote Work Options': ((i + 1) % 4) + 1,
         'Paid Time Off': ((i + 2) % 4) + 1,
         'Retirement Plan': ((i + 3) % 4) + 1,
+      },
+    },
+  })),
+
+  // --- New Responses for Each Survey Type ---
+
+  // Text Input Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `text-resp${i + 1}`,
+    surveyId: 'text-input-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-text-feedback': `The support agent was ${['very helpful', 'quick to respond', 'knowledgeable', 'a bit slow', 'friendly but couldn\'t solve my issue', 'excellent', 'unhelpful', 'patient', 'efficient', 'confusing'][i]}.` },
+  })),
+
+  // Multiple Choice Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `mc-resp${i + 1}`,
+    surveyId: 'multiple-choice-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-mc-platform': ['Instagram', 'TikTok', 'LinkedIn', 'Facebook', 'Twitter', 'Instagram', 'LinkedIn', 'TikTok', 'Facebook', 'Instagram'][i] },
+  })),
+
+  // Rating Scale Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `rating-resp${i + 1}`,
+    surveyId: 'rating-scale-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-rating-website': [5, 4, 5, 3, 4, 5, 2, 4, 5, 3][i] },
+  })),
+
+  // Numerical Input Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `num-resp${i + 1}`,
+    surveyId: 'numerical-input-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-number-hours': [40, 45, 38, 50, 42, 60, 35, 40, 48, 55][i] },
+  })),
+
+  // Yes/No Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `yn-resp${i + 1}`,
+    surveyId: 'yes-no-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-yesno-feature': ['Yes', 'Yes', 'No', 'Yes', 'No', 'Yes', 'Yes', 'Yes', 'No', 'Yes'][i] },
+  })),
+
+  // Dropdown Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `dropdown-resp${i + 1}`,
+    surveyId: 'dropdown-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-dropdown-device': ['Laptop', 'Desktop', 'Laptop', 'Tablet', 'Laptop', 'Desktop', 'Smartphone', 'Laptop', 'Tablet', 'Desktop'][i] },
+  })),
+
+  // Matrix Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `matrix-resp${i + 1}`,
+    surveyId: 'matrix-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: {
+      'q-matrix-product': {
+        Performance: ['Satisfied', 'Very Satisfied', 'Neutral', 'Satisfied', 'Dissatisfied'][i % 5],
+        Features: ['Very Satisfied', 'Satisfied', 'Satisfied', 'Neutral', 'Very Satisfied'][i % 5],
+        Design: ['Neutral', 'Very Satisfied', 'Satisfied', 'Very Satisfied', 'Neutral'][i % 5],
+        Reliability: ['Dissatisfied', 'Satisfied', 'Very Satisfied', 'Satisfied', 'Satisfied'][i % 5],
+      },
+    },
+  })),
+
+  // Date Picker Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `date-resp${i + 1}`,
+    surveyId: 'date-picker-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-date-purchase': new Date(Date.now() - (i + 5) * 7 * 24 * 60 * 60 * 1000) },
+  })),
+
+  // File Upload Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `file-resp${i + 1}`,
+    surveyId: 'file-upload-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: { 'q-file-resume': `resume_user_${(i % 4) + 1}_v${i + 1}.pdf` },
+  })),
+
+  // Ranking Survey Responses
+  ...Array.from({ length: 10 }, (_, i) => ({
+    id: `ranking-resp${i + 1}`,
+    surveyId: 'ranking-survey',
+    userId: `user-${(i % 4) + 1}`,
+    submittedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+    answers: {
+      'q-ranking-features': {
+        'Dark Mode': [4, 2, 1, 3, 2, 4, 1, 3, 2, 1][i],
+        'Mobile App': [1, 1, 2, 2, 1, 2, 3, 1, 3, 2][i],
+        'Offline Access': [2, 3, 4, 1, 3, 1, 2, 4, 1, 4][i],
+        'Integrations': [3, 4, 3, 4, 4, 3, 4, 2, 4, 3][i],
       },
     },
   })),
