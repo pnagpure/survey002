@@ -1,3 +1,4 @@
+
 export type QuestionType = 'text' | 'multiple-choice' | 'rating';
 
 export interface Question {
@@ -20,4 +21,10 @@ export interface SurveyResponse {
   surveyId: string;
   submittedAt: string;
   answers: Record<string, string | number>; // questionId -> answer
+}
+
+export interface User {
+    id: string;
+    name: string;
+    email: string;
 }

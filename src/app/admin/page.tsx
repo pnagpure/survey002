@@ -1,3 +1,4 @@
+
 import { surveys, responses } from "@/lib/data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,6 +22,11 @@ export default function AdminPage() {
             <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
           </div>
            <div className="ml-auto flex items-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/admin/users">
+                  <Users className="mr-2 h-4 w-4"/> Manage Users
+                </Link>
+              </Button>
              <Button asChild size="sm">
                 <Link href="/admin/surveys/create">
                   <Plus className="mr-2 h-4 w-4"/> Create Survey
@@ -100,7 +106,7 @@ export default function AdminPage() {
                 <CardHeader>
                     <CardTitle>Recent Responses</CardTitle>
                     <CardDescription>The latest responses submitted across all surveys.</CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                     <Table>
                     <TableHeader>
