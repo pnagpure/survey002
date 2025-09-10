@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function PreviewSurveyPage() {
   const params = useParams();
