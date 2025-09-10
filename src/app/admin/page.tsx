@@ -23,18 +23,26 @@ import { Button } from "@/components/ui/button";
 const surveyCollections = [
   {
     id: "collection1",
-    name: "Immediate Survey Group",
+    name: "Q3 Product Feedback",
     surveyId: "product-feedback-2024",
-    userIds: ["user-1"],
-    schedule: "2025-09-10",
+    userIds: ["user-1", "user-2", "user-4"],
+    schedule: "2024-09-10",
     status: "active",
   },
   {
     id: "collection2",
-    name: "Future Survey Group",
+    name: "Q2 Employee Engagement",
     surveyId: "workplace-satisfaction-q2",
     userIds: ["user-2", "user-3"],
-    schedule: "2025-09-15",
+    schedule: "2024-09-15",
+    status: "pending",
+  },
+   {
+    id: "collection3",
+    name: "Alpha Testers - New Feature",
+    surveyId: "product-feedback-2024",
+    userIds: ["user-1", "user-3", "user-4"],
+    schedule: "2024-10-01",
     status: "pending",
   },
 ];
