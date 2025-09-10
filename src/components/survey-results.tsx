@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
@@ -144,7 +145,6 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
   const { toast } = useToast();
   const [isStatAnalysisOpen, setIsStatAnalysisOpen] = useState(false);
   const [statAnalysisConfig, setStatAnalysisConfig] = useState<{question1: any, testType: StatTestType} | null>(null);
-
 
   const [processedResults, setProcessedResults] = useState<ProcessedResults>(
     useMemo(() => {
@@ -524,3 +524,5 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     </div>
   );
 }
+
+    
