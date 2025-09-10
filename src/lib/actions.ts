@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { getResponsesBySurveyId, getSurveyById } from './data';
 import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
 import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
-import { performStatisticalAnalysis, PerformStatisticalAnalysisInputSchema, PerformStatisticalAnalysisOutput } from '@/ai/flows/perform-statistical-analysis';
+import { performStatisticalAnalysis } from '@/ai/flows/perform-statistical-analysis';
+import { PerformStatisticalAnalysisInputSchema, type PerformStatisticalAnalysisOutput } from '@/ai/schemas/statistical-analysis';
 import { revalidatePath } from 'next/cache';
 
 export async function submitResponse(surveyId: string, data: unknown) {
