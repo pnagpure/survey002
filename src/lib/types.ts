@@ -59,4 +59,6 @@ export interface SurveyCollection {
   superUserIds: string[];
   schedule: string;
   status: 'active' | 'pending';
+  cohortType?: 'organisation' | 'university' | 'government' | 'general';
+  logoUrl?: string;
 }

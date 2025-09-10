@@ -8,7 +8,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 // In a real app, you would have a more robust User type and import it
@@ -43,6 +44,8 @@ export default function EditCollectionPage() {
   const [superUserIds, setSuperUserIds] = useState<string[]>(collection.superUserIds || []);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
+  const [cohortType, setCohortType] = useState(collection.cohortType || '');
+  const [logoUrl, setLogoUrl] = useState(collection.logoUrl || '');
 
   // Handle adding a new user manually
   const handleAddRespondent = () => {
@@ -101,6 +104,8 @@ export default function EditCollectionPage() {
   const handleSaveChanges = () => {
      // In a real app, this would write to your database (e.g., Firestore)
     console.log("Saving changes for collection:", collection.name);
+    console.log("Updated cohortType:", cohortType);
+    console.log("Updated logoUrl:", logoUrl);
     console.log("Updated respondent list:", respondents.map(u => u.id));
     console.log("Updated super user list:", superUserIds);
     alert("Changes saved! Check the console for data.");
@@ -113,7 +118,7 @@ export default function EditCollectionPage() {
   const assignedSuperUsers = allUsers.filter(u => superUserIds.includes(u.id));
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8">
+    <div className="max-w-6xl mx-auto p-4 md:p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Collection: {collection.name}</h1>
@@ -167,8 +172,8 @@ export default function EditCollectionPage() {
           </Card>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8">
-        <Card>
+      <div className="grid lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
             <CardHeader>
             <CardTitle>Manage Respondents</CardTitle>
             <CardDescription>
@@ -270,16 +275,47 @@ export default function EditCollectionPage() {
                 </div>
             </CardContent>
         </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ShieldCheck /> Manage Super Users</CardTitle>
-                <CardDescription>
-                    Super users can view results and perform analytics for this collection.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4 rounded-lg border p-4">
-                    <h4 className="text-sm font-medium mb-2">Select Super Users</h4>
+        <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Building2 /> Branding</CardTitle>
+                    <CardDescription>
+                        Customize the welcome page for this collection.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Cohort Type</Label>
+                        <Select onValueChange={(value) => setCohortType(value)} value={cohortType}>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select cohort type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="organisation">Organisation</SelectItem>
+                                <SelectItem value="university">University</SelectItem>
+                                <SelectItem value="government">Government</SelectItem>
+                                <SelectItem value="general">General Public</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Logo URL (Optional)</Label>
+                        <Input
+                            value={logoUrl}
+                            onChange={(e) => setLogoUrl(e.target.value)}
+                            placeholder="https://example.com/logo.png"
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ShieldCheck /> Manage Super Users</CardTitle>
+                    <CardDescription>
+                        Super users can view results and analytics.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
                     <div className="max-h-96 overflow-y-auto space-y-2">
                         {allUsers.map(user => (
                              <Label key={user.id} htmlFor={`super-user-${user.id}`} className="flex items-center justify-between p-3 bg-muted/30 rounded-md shadow-sm hover:bg-muted/60 cursor-pointer transition-colors">
@@ -295,9 +331,9 @@ export default function EditCollectionPage() {
                             </Label>
                         ))}
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
       </div>
 
       <div className="mt-8">

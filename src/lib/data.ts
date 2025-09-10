@@ -507,6 +507,8 @@ export const surveyCollections: SurveyCollection[] = [
     superUserIds: ["user-3"],
     schedule: "2024-09-10",
     status: "active",
+    cohortType: 'organisation',
+    logoUrl: 'https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600'
   },
   {
     id: "collection2",
@@ -516,6 +518,7 @@ export const surveyCollections: SurveyCollection[] = [
     superUserIds: ["user-1"],
     schedule: "2024-09-15",
     status: "pending",
+    cohortType: 'general'
   },
    {
     id: "collection3",
@@ -525,6 +528,7 @@ export const surveyCollections: SurveyCollection[] = [
     superUserIds: ["user-2"],
     schedule: "2024-10-01",
     status: "pending",
+    cohortType: 'government'
   },
   {
     id: "collection4",
@@ -534,6 +538,7 @@ export const surveyCollections: SurveyCollection[] = [
     superUserIds: [],
     schedule: "2024-11-01",
     status: "pending",
+    cohortType: 'university'
   }
 ];
 
@@ -548,4 +553,8 @@ export const getResponsesBySurveyId = (surveyId: string): SurveyResponse[] => {
 
 export const getSurveyCollectionById = (id: string): SurveyCollection | undefined => {
   return surveyCollections.find(collection => collection.id === id);
+}
+
+export const getSurveyCollectionsBySurveyId = (surveyId: string): SurveyCollection[] => {
+    return surveyCollections.filter(c => c.surveyId === surveyId);
 }

@@ -22,7 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
 import { users as allUsers } from "@/lib/users"; // Import all users
-import { ArrowLeft, UserPlus, X, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, UserPlus, X, ShieldCheck, Building2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -38,6 +38,8 @@ export default function CreateCollectionPage() {
   const [name, setName] = useState('');
   const [surveyId, setSurveyId] = useState('');
   const [schedule, setSchedule] = useState('');
+  const [cohortType, setCohortType] = useState<'organisation' | 'university' | 'government' | 'general' | ''>('');
+  const [logoUrl, setLogoUrl] = useState('');
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -113,6 +115,8 @@ export default function CreateCollectionPage() {
       name,
       surveyId,
       schedule,
+      cohortType,
+      logoUrl,
       status: new Date(schedule) <= new Date() ? 'active' : 'pending',
       users, // In a real app, you would save user IDs
       superUserIds,
@@ -164,6 +168,37 @@ export default function CreateCollectionPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-4 rounded-lg border p-4">
+                <h3 className="text-lg font-medium flex items-center gap-2"><Building2 /> Branding</h3>
+                 <p className="text-sm text-muted-foreground">
+                    Customize the welcome page for this survey collection.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label>Cohort Type</Label>
+                        <Select onValueChange={(value) => setCohortType(value as any)} value={cohortType}>
+                            <SelectTrigger>
+                            <SelectValue placeholder="Select cohort type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="organisation">Organisation</SelectItem>
+                                <SelectItem value="university">University</SelectItem>
+                                <SelectItem value="government">Government</SelectItem>
+                                <SelectItem value="general">General Public</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Logo URL (Optional)</Label>
+                        <Input
+                            value={logoUrl}
+                            onChange={(e) => setLogoUrl(e.target.value)}
+                            placeholder="https://example.com/logo.png"
+                        />
+                    </div>
+                </div>
             </div>
             
             <div className="space-y-4 rounded-lg border p-4">
