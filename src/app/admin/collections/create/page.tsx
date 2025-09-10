@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -22,10 +23,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
 import { users as allUsers } from "@/lib/users"; // Import all users
-import { ArrowLeft, UserPlus, X, ShieldCheck, Building2 } from 'lucide-react';
+import { ArrowLeft, UserPlus, X, ShieldCheck, Building2, Upload, MessageSquare, Pencil } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -39,7 +42,9 @@ export default function CreateCollectionPage() {
   const [surveyId, setSurveyId] = useState('');
   const [schedule, setSchedule] = useState('');
   const [cohortType, setCohortType] = useState<'organisation' | 'university' | 'government' | 'general' | ''>('');
-  const [logoUrl, setLogoUrl] = useState('');
+  const [logoDataUri, setLogoDataUri] = useState('');
+  const [sponsorMessage, setSponsorMessage] = useState('');
+  const [sponsorSignature, setSponsorSignature] = useState('');
   
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -73,6 +78,17 @@ export default function CreateCollectionPage() {
         : [...prev, userId]
     );
   };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoDataUri(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   // Handle Excel file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,7 +132,9 @@ export default function CreateCollectionPage() {
       surveyId,
       schedule,
       cohortType,
-      logoUrl,
+      logoDataUri,
+      sponsorMessage,
+      sponsorSignature,
       status: new Date(schedule) <= new Date() ? 'active' : 'pending',
       users, // In a real app, you would save user IDs
       superUserIds,
@@ -171,12 +189,12 @@ export default function CreateCollectionPage() {
             </div>
 
             <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium flex items-center gap-2"><Building2 /> Branding</h3>
+                <h3 className="text-lg font-medium flex items-center gap-2"><Building2 /> Branding & Welcome Page</h3>
                  <p className="text-sm text-muted-foreground">
                     Customize the welcome page for this survey collection.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="space-y-2">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
                         <Label>Cohort Type</Label>
                         <Select onValueChange={(value) => setCohortType(value as any)} value={cohortType}>
                             <SelectTrigger>
@@ -191,14 +209,33 @@ export default function CreateCollectionPage() {
                         </Select>
                     </div>
                      <div className="space-y-2">
-                        <Label>Logo URL (Optional)</Label>
-                        <Input
-                            value={logoUrl}
-                            onChange={(e) => setLogoUrl(e.target.value)}
-                            placeholder="https://example.com/logo.png"
+                        <Label>Sponsor Logo</Label>
+                         <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                         />
+                        {logoDataUri && <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="mt-2 rounded-lg object-contain" />}
                     </div>
-                </div>
+                 </div>
+                 <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Sponsor Message</Label>
+                    <Textarea 
+                        value={sponsorMessage}
+                        onChange={(e) => setSponsorMessage(e.target.value)}
+                        placeholder="e.g., Your feedback is invaluable to us..."
+                        rows={4}
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Sponsor Signature</Label>
+                    <Input 
+                        value={sponsorSignature}
+                        onChange={(e) => setSponsorSignature(e.target.value)}
+                        placeholder="e.g., John Doe, CEO of ExampleCorp"
+                    />
+                 </div>
             </div>
             
             <div className="space-y-4 rounded-lg border p-4">

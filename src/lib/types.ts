@@ -60,5 +60,7 @@ export interface SurveyCollection {
   schedule: string;
   status: 'active' | 'pending';
   cohortType?: 'organisation' | 'university' | 'government' | 'general';
-  logoUrl?: string;
+  logoDataUri?: string;
+  sponsorMessage?: string;
+  sponsorSignature?: string;
 }

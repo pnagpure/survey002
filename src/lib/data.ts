@@ -1,4 +1,5 @@
 
+
 import type { Survey, SurveyResponse, SurveyCollection } from './types';
 import type { User } from './types';
 
@@ -508,7 +509,9 @@ export const surveyCollections: SurveyCollection[] = [
     schedule: "2024-09-10",
     status: "active",
     cohortType: 'organisation',
-    logoUrl: 'https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600'
+    logoDataUri: '',
+    sponsorMessage: 'Your feedback is crucial in helping us improve. We appreciate you taking the time to share your thoughts.',
+    sponsorSignature: 'Jane Doe, Head of Product'
   },
   {
     id: "collection2",

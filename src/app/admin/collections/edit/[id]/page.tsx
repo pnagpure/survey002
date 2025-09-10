@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -8,16 +9,17 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck, MessageSquare, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
+import { Textarea } from '@/components/ui/textarea';
+import Image from 'next/image';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -39,13 +41,15 @@ export default function EditCollectionPage() {
 
   const survey = getSurveyById(collection.surveyId);
 
-  // State for user management
-  const [respondents, setRespondents] = useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
-  const [superUserIds, setSuperUserIds] = useState<string[]>(collection.superUserIds || []);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [cohortType, setCohortType] = useState(collection.cohortType || '');
-  const [logoUrl, setLogoUrl] = useState(collection.logoUrl || '');
+  // State for editable fields
+  const [respondents, setRespondents] = React.useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
+  const [superUserIds, setSuperUserIds] = React.useState<string[]>(collection.superUserIds || []);
+  const [newUserName, setNewUserName] = React.useState('');
+  const [newUserEmail, setNewUserEmail] = React.useState('');
+  const [cohortType, setCohortType] = React.useState(collection.cohortType || '');
+  const [logoDataUri, setLogoDataUri] = React.useState(collection.logoDataUri || '');
+  const [sponsorMessage, setSponsorMessage] = React.useState(collection.sponsorMessage || '');
+  const [sponsorSignature, setSponsorSignature] = React.useState(collection.sponsorSignature || '');
 
   // Handle adding a new user manually
   const handleAddRespondent = () => {
@@ -72,6 +76,17 @@ export default function EditCollectionPage() {
         : [...prev, userId]
     );
   };
+  
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoDataUri(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   // Handle Excel file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +120,9 @@ export default function EditCollectionPage() {
      // In a real app, this would write to your database (e.g., Firestore)
     console.log("Saving changes for collection:", collection.name);
     console.log("Updated cohortType:", cohortType);
-    console.log("Updated logoUrl:", logoUrl);
+    console.log("Updated logoDataUri:", logoDataUri.substring(0, 50) + '...');
+    console.log("Updated sponsorMessage:", sponsorMessage);
+    console.log("Updated sponsorSignature:", sponsorSignature);
     console.log("Updated respondent list:", respondents.map(u => u.id));
     console.log("Updated super user list:", superUserIds);
     alert("Changes saved! Check the console for data.");
@@ -299,11 +316,30 @@ export default function EditCollectionPage() {
                         </Select>
                     </div>
                      <div className="space-y-2">
-                        <Label>Logo URL (Optional)</Label>
+                        <Label>Sponsor Logo</Label>
                         <Input
-                            value={logoUrl}
-                            onChange={(e) => setLogoUrl(e.target.value)}
-                            placeholder="https://example.com/logo.png"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        />
+                        {logoDataUri && <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="mt-2 rounded-lg object-contain" />}
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Sponsor Message</Label>
+                        <Textarea 
+                            value={sponsorMessage}
+                            onChange={(e) => setSponsorMessage(e.target.value)}
+                            placeholder="e.g., Your feedback is invaluable to us..."
+                            rows={4}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Sponsor Signature</Label>
+                        <Input 
+                            value={sponsorSignature}
+                            onChange={(e) => setSponsorSignature(e.target.value)}
+                            placeholder="e.g., John Doe, CEO of ExampleCorp"
                         />
                     </div>
                 </CardContent>
