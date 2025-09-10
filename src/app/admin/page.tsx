@@ -1,3 +1,4 @@
+
 import { surveys, responses } from "@/lib/data";
 import {
   Card,
@@ -97,7 +98,7 @@ export default function AdminPage() {
               <CardDescription>
                 An overview of all created surveys.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -135,7 +136,7 @@ export default function AdminPage() {
               <CardDescription>
                 The latest responses submitted across all surveys.
               </CardDescription>
-            </CardHeader>
+            </Header>
             <CardContent>
               <Table>
                 <TableHeader>

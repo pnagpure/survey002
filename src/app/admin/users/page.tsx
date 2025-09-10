@@ -53,7 +53,7 @@ export default function AdminUsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
-          <CardDescription>A list of all users in the system.</CardDescription>
+          <CardDescription>A list of all users in the system. Assign them a survey to get started.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -76,7 +76,7 @@ export default function AdminUsersPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{assignedSurvey?.title || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant={status === 'Completed' ? 'default' : 'secondary'}>{status}</Badge>
+                      <Badge variant={status === 'Completed' ? 'default' : status === 'Sent' ? 'secondary' : 'outline'}>{status}</Badge>
                     </TableCell>
                     <TableCell className="text-right flex gap-2 justify-end">
                       <AssignSurveyMenu />

@@ -18,7 +18,7 @@ export function AssignSurveyMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         {surveys.map(survey => (
-          <DropdownMenuItem key={survey.id}>
+          <DropdownMenuItem key={survey.id} onSelect={() => alert(`Assigned "${survey.title}"`)}>
             {survey.title}
           </DropdownMenuItem>
         ))}
