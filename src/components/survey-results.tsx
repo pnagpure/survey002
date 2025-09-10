@@ -22,9 +22,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu"
 import { generateReport, analyzeText } from '@/lib/actions';
-import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags, Percent, Smile, Frown, Meh, ChevronDown, PieChart as PieChartIcon } from 'lucide-react';
+import { Bot, Loader2, FileText, BarChart2 as BarChartIcon, Star, MessageSquare, Lightbulb, Search, Tags, Percent, Smile, Frown, Meh, ChevronDown, PieChart as PieChartIcon, Activity, Strikethrough, Orbit, BarChartBig, AreaChart, GitCompareArrows, TestTube2, WholeWord, Sigma, BrainCircuit, LineChart, GanttChartSquare, FileQuestion, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
@@ -61,13 +65,13 @@ const icons: { [key: string]: React.ElementType } = {
     rating: Star,
     'multiple-choice': BarChartIcon,
     text: MessageSquare,
-    yesNo: BarChartIcon,
+    yesNo: GitCompareArrows,
     dropdown: BarChartIcon,
-    ranking: BarChartIcon,
-    matrix: BarChartIcon,
-    number: BarChartIcon,
+    ranking: GanttChartSquare,
+    matrix: Orbit,
+    number: Hash,
     date: BarChartIcon,
-    file: FileText,
+    file: FileQuestion,
 }
 
 const sentimentColors = {
@@ -85,6 +89,75 @@ const pieColors = [
     'hsl(var(--secondary))',
 ];
 
+const getAnalysisOptionsForType = (type: string) => {
+    const options: { analyses: {value: string, label: string}[], charts: {value: AnalysisType, label: string}[]} = {
+        analyses: [],
+        charts: []
+    };
+
+    switch(type) {
+        case 'multiple-choice':
+        case 'yesNo':
+        case 'dropdown':
+            options.analyses = [
+                { value: 'freq', label: 'Frequency Counts' },
+                { value: 'chi', label: 'Chi-Square Test' },
+                { value: 'contingency', label: 'Contingency Tables' }
+            ];
+            options.charts = [
+                { value: 'bar-chart', label: 'Bar Chart' },
+                { value: 'pie-chart', label: 'Pie Chart' },
+            ];
+            break;
+        case 'text':
+            options.analyses = [
+                { value: 'thematic', label: 'Thematic Analysis' },
+                { value: 'word-freq', label: 'Word Frequency' },
+                { value: 'sentiment', label: 'Sentiment Analysis' }
+            ];
+            options.charts = [
+                { value: 'text-analysis', label: 'AI Sentiment & Thematic Analysis'},
+                { value: 'raw-text', label: 'View Raw Responses'}
+            ];
+            break;
+        case 'rating':
+        case 'matrix':
+            options.analyses = [
+                { value: 'desc', label: 'Mean, Median, Mode' },
+                { value: 'stddev', label: 'Standard Deviation' },
+                { value: 'ttest', label: 't-test / ANOVA' },
+                { value: 'corr', label: 'Correlation' },
+                { value: 'factor', label: 'Factor Analysis' }
+            ];
+            options.charts = [
+                { value: 'bar-chart', label: 'Histogram' },
+            ];
+            break;
+        case 'number':
+             options.analyses = [
+                { value: 'desc', label: 'Mean, Median, Mode' },
+                { value: 'stddev', label: 'Standard Deviation' },
+                { value: 'ttest', label: 't-test / ANOVA' },
+                { value: 'regression', label: 'Regression' },
+            ];
+            options.charts = [
+                { value: 'bar-chart', label: 'Histogram' },
+            ];
+            break;
+        case 'ranking':
+             options.analyses = [
+                { value: 'median-rank', label: 'Median Rank' },
+                { value: 'spearman', label: 'Spearman Correlation' },
+                { value: 'freq-rank', label: 'Top Rank Frequency' },
+            ];
+            options.charts = [
+                 { value: 'bar-chart', label: 'Rank Distribution' },
+            ];
+            break;
+        // Add other cases here
+    }
+    return options;
+}
 
 export function SurveyResults({ survey, responses }: { survey: Survey; responses: SurveyResponse[] }) {
   const [report, setReport] = useState<string | null>(null);
@@ -106,38 +179,50 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
             const questionType = q.type;
 
             let data;
-            if (['rating', 'multiple-choice', 'yesNo', 'dropdown'].includes(questionType)) {
+            if (['rating', 'multiple-choice', 'yesNo', 'dropdown', 'ranking', 'number'].includes(questionType)) {
                 let counts: { [key: string]: number } = {};
-                if (questionType === 'rating') {
-                    counts = responses.reduce((c, r) => {
+                 if (['rating', 'yesNo', 'dropdown'].includes(questionType)) {
+                     counts = responses.reduce((c, r) => {
                         const answer = r.answers[q.id];
-                        c[answer] = (c[answer] || 0) + 1;
+                        if(answer) c[answer] = (c[answer] || 0) + 1;
                         return c;
                     }, {} as { [key: string]: number });
-                } else if (questionType === 'multiple-choice' && q.options) {
+                 } else if (questionType === 'multiple-choice' && q.options) {
                      const getAnswers = (r: SurveyResponse) => {
                         const answer = r.answers[q.id];
                         return Array.isArray(answer) ? answer : [answer];
                     };
-                    counts = responses.flatMap(getAnswers).reduce((c, answer) => {
+                    counts = responses.flatMap(getAnswers).filter(Boolean).reduce((c, answer) => {
                          c[answer] = (c[answer] || 0) + 1;
                          return c;
                     }, {} as { [key: string]: number });
-                } else if (questionType === 'yesNo') {
-                    counts = responses.reduce((c, r) => {
+                 } else if (questionType === 'ranking' && q.options) {
+                    // For ranking, let's count how many times each option was ranked 1st
+                    counts = q.options.reduce((acc, opt) => ({...acc, [opt]: 0}), {});
+                    responses.forEach(r => {
                         const answer = r.answers[q.id];
-                        c[answer] = (c[answer] || 0) + 1;
-                        return c;
-                    }, {} as { [key: string]: number });
-                } else if (questionType === 'dropdown' && q.options) {
-                    counts = responses.reduce((c, r) => {
+                        if (answer) {
+                            for (const opt in answer) {
+                                if (answer[opt] === 1) {
+                                    counts[opt] = (counts[opt] || 0) + 1;
+                                }
+                            }
+                        }
+                    });
+                } else if (questionType === 'number') {
+                    // For numerical, we can create bins for a histogram
+                     counts = responses.reduce((c, r) => {
                         const answer = r.answers[q.id];
-                        c[answer] = (c[answer] || 0) + 1;
+                         if (answer !== undefined && answer !== null) {
+                            const bin = Math.floor(answer / 10) * 10;
+                            const binName = `${bin}-${bin + 9}`;
+                            c[binName] = (c[binName] || 0) + 1;
+                        }
                         return c;
                     }, {} as { [key: string]: number });
                 }
                 
-                data = Object.entries(counts).map(([name, value]) => ({ name, value }));
+                data = Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
 
                 acc[q.id] = { ...common, type: questionType, data: data };
             } else if (questionType === 'text') {
@@ -225,26 +310,6 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     )
   }
   
-  const getAnalysisOptions = (type: string): { value: AnalysisType, label: string, icon: React.ElementType }[] => {
-    switch (type) {
-        case 'rating':
-        case 'multiple-choice':
-        case 'yesNo':
-        case 'dropdown':
-            return [
-                { value: 'bar-chart', label: 'Frequency Bar Chart', icon: BarChartIcon },
-                { value: 'pie-chart', label: 'Proportion Pie Chart', icon: PieChartIcon },
-            ];
-        case 'text':
-            return [
-                { value: 'text-analysis', label: 'AI Sentiment & Thematic Analysis', icon: Lightbulb },
-                { value: 'raw-text', label: 'View Raw Responses', icon: FileText }
-            ];
-        default:
-            return [];
-    }
-  };
-
   return (
     <div className="space-y-6">
         <Card>
@@ -279,7 +344,7 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
       {Object.keys(processedResults).map(questionId => {
         const result = processedResults[questionId];
         const Icon = result.icon;
-        const analysisOptions = getAnalysisOptions(result.type);
+        const analysisOptions = getAnalysisOptionsForType(result.type);
         
         const sentimentData = result.textAnalysis ? [
             { name: 'Positive', value: result.textAnalysis.sentiment.positivePercentage, fill: sentimentColors.positive },
@@ -291,29 +356,49 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
           <Card key={questionId}>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2"><Icon className="text-primary"/>{result.title}</CardTitle>
-               {analysisOptions.length > 0 && (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                        Analyze
-                        <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        {analysisOptions.map(opt => (
-                            <DropdownMenuItem key={opt.value} onClick={() => handleSetAnalysis(questionId, opt.value)}>
-                                <opt.icon className="mr-2 h-4 w-4" />
-                                {opt.label}
-                            </DropdownMenuItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+               <div className="flex gap-2">
+                {analysisOptions.analyses.length > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <Sigma className="mr-2 h-4 w-4" />
+                                Statistical Analyses
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {analysisOptions.analyses.map(opt => (
+                                <DropdownMenuItem key={opt.value} onSelect={() => alert(`Running: ${opt.label}`)}>
+                                    {opt.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+                {analysisOptions.charts.length > 0 && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                                <BarChartBig className="mr-2 h-4 w-4" />
+                                Charts &amp; Visualisation
+                                <ChevronDown className="ml-2 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            {analysisOptions.charts.map(opt => (
+                                <DropdownMenuItem key={opt.value} onClick={() => handleSetAnalysis(questionId, opt.value)}>
+                                    {opt.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
+               </div>
             </CardHeader>
             <CardContent>
                 {result.selectedAnalysis === 'none' && (
                     <div className="text-center py-10 text-muted-foreground">
-                        <p>Select an analysis type to visualize the data.</p>
+                        <p>Select a chart or visualization to view the data.</p>
                     </div>
                 )}
                 { result.selectedAnalysis === 'bar-chart' && result.data.length > 0 && (
@@ -430,5 +515,3 @@ export function SurveyResults({ survey, responses }: { survey: Survey; responses
     </div>
   );
 }
-
-    
