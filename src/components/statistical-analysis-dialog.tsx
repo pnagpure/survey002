@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,14 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
   const [result, setResult] = useState<any>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Reset state when the dialog is opened with a new question
+    if (isOpen) {
+        setQuestion2Id('');
+        setResult(null);
+    }
+  }, [isOpen, question1]);
+
   const handleRunAnalysis = async () => {
     if (!question1 || !question2Id) {
       toast({
@@ -63,15 +71,24 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
         responses: JSON.stringify(responses.map(r => r.answers))
     };
 
-    const res = await runStatisticalTest(testData);
-    
-    if (res.success && res.result) {
-        setResult(res.result);
-    } else {
+    try {
+        const res = await runStatisticalTest(testData);
+        
+        if (res.success && res.result) {
+            setResult(res.result);
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Analysis Failed',
+                description: res.error || 'An unknown error occurred.',
+            });
+        }
+    } catch(e) {
+        console.error(e);
         toast({
             variant: 'destructive',
             title: 'Analysis Failed',
-            description: res.error || 'An unknown error occurred.',
+            description: 'An unexpected error occurred while running the test.',
         });
     }
 
@@ -98,7 +115,7 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
         <div className="py-4 space-y-4">
             <div>
                  <label className="text-sm font-medium">Compare with:</label>
-                 <Select onValueChange={setQuestion2Id} value={question2Id}>
+                 <Select onValueChange={setQuestion2Id} value={question2Id} disabled={!question1}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select a question" />
                     </SelectTrigger>
@@ -109,7 +126,7 @@ export default function StatisticalAnalysisDialog({ isOpen, onOpenChange, survey
                     </SelectContent>
                  </Select>
             </div>
-            <Button onClick={handleRunAnalysis} disabled={isLoading || !question2Id}>
+            <Button onClick={handleRunAnalysis} disabled={isLoading || !question2Id || !question1}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <BrainCircuit className="mr-2 h-4 w-4"/>}
                 Run Analysis
             </Button>
