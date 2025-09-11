@@ -2,34 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { users } from "@/lib/users";
-import { Send, Users, ArrowLeft } from "lucide-react";
+import { Users, ArrowLeft, Trash2 } from "lucide-react";
 import { AddUserDialog } from "./_components/add-user-dialog";
-import { AssignSurveyMenu } from "./_components/assign-survey-menu";
-import { Badge } from "@/components/ui/badge";
-import { getSurveyById } from "@/lib/data";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+
 
 export default function AdminUsersPage() {
-
-  const getAssignedSurvey = (userId: string) => {
-    // In a real app, this would be a database lookup.
-    // For now, we'll simulate some users having assignments.
-    const assignments: Record<string, string | undefined> = {
-      'user-1': 'product-feedback-2024',
-      'user-3': 'workplace-satisfaction-q2'
-    }
-    const surveyId = assignments[userId];
-    return surveyId ? getSurveyById(surveyId) : null;
-  }
-
-  const getStatus = (userId: string) => {
-    const statuses: Record<string, string> = {
-      'user-1': 'Completed',
-      'user-3': 'Sent'
-    }
-    return statuses[userId] || 'Not Sent';
-  }
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -52,8 +31,8 @@ export default function AdminUsersPage() {
     <main className="flex-1 p-4 md:p-8">
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>A list of all users in the system. Assign them a survey to get started.</CardDescription>
+          <CardTitle>Application Administrators</CardTitle>
+          <CardDescription>A list of all users with access to the admin panel.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -61,29 +40,23 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Assigned Survey</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => {
-                const assignedSurvey = getAssignedSurvey(user.id);
-                const status = getStatus(user.id);
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{assignedSurvey?.title || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant={status === 'Completed' ? 'default' : status === 'Sent' ? 'secondary' : 'outline'}>{status}</Badge>
+                      <Badge variant="secondary">Admin</Badge>
                     </TableCell>
-                    <TableCell className="text-right flex gap-2 justify-end">
-                      <AssignSurveyMenu />
-                      <Button variant="outline" size="sm" disabled={status !== 'Sent'}>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Reminder
-                      </Button>
+                    <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                     </TableCell>
                   </TableRow>
                 )

@@ -16,12 +16,10 @@ import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
-// In a real app, you would have a more robust User type and import it
 interface User {
   id: string;
   name: string;
@@ -46,39 +44,56 @@ export default function EditCollectionPage() {
 
   // State for editable fields
   const [respondents, setRespondents] = React.useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
-  const [superUserIds, setSuperUserIds] = React.useState<string[]>(collection.superUserIds || []);
-  const [newUserName, setNewUserName] = React.useState('');
-  const [newUserEmail, setNewUserEmail] = React.useState('');
+  
+  // Super users are also managed as a separate list within the collection
+  const [superUsers, setSuperUsers] = React.useState<User[]>(allUsers.filter(u => (collection.superUserIds || []).includes(u.id)));
+  
+  const [newRespondentName, setNewRespondentName] = React.useState('');
+  const [newRespondentEmail, setNewRespondentEmail] = React.useState('');
+  
+  const [newSuperUserName, setNewSuperUserName] = React.useState('');
+  const [newSuperUserEmail, setNewSuperUserEmail] = React.useState('');
+  
   const [cohortType, setCohortType] = React.useState(collection.cohortType || '');
   const [logoDataUri, setLogoDataUri] = React.useState(collection.logoDataUri || '');
   const [sponsorMessage, setSponsorMessage] = React.useState(collection.sponsorMessage || '');
   const [sponsorSignature, setSponsorSignature] = React.useState(collection.sponsorSignature || '');
 
-  // Handle adding a new user manually
+  // Handle adding a new respondent manually
   const handleAddRespondent = () => {
-    if (newUserName && newUserEmail) {
+    if (newRespondentName && newRespondentEmail) {
       const newUser: User = {
         id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        name: newUserName,
-        email: newUserEmail,
+        name: newRespondentName,
+        email: newRespondentEmail,
       };
       setRespondents((prev) => [...prev, newUser]);
-      setNewUserName('');
-      setNewUserEmail('');
+      setNewRespondentName('');
+      setNewRespondentEmail('');
     }
   };
   
   const handleRemoveRespondent = (userId: string) => {
     setRespondents((prev) => prev.filter(user => user.id !== userId));
   }
-  
-  const handleSuperUserToggle = (userId: string) => {
-    setSuperUserIds((prev) => 
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+
+  // Handle adding a new super user manually
+  const handleAddSuperUser = () => {
+    if (newSuperUserName && newSuperUserEmail) {
+      const newSuperUser: User = {
+        id: `super-user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: newSuperUserName,
+        email: newSuperUserEmail,
+      };
+      setSuperUsers((prev) => [...prev, newSuperUser]);
+      setNewSuperUserName('');
+      setNewSuperUserEmail('');
+    }
   };
+
+  const handleRemoveSuperUser = (userId: string) => {
+    setSuperUsers((prev) => prev.filter(user => user.id !== userId));
+  }
   
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -91,7 +106,7 @@ export default function EditCollectionPage() {
     }
   }
 
-  // Handle Excel file upload
+  // Handle Excel file upload for respondents
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -127,7 +142,7 @@ export default function EditCollectionPage() {
     console.log("Updated sponsorMessage:", sponsorMessage);
     console.log("Updated sponsorSignature:", sponsorSignature);
     console.log("Updated respondent list:", respondents.map(u => u.id));
-    console.log("Updated super user list:", superUserIds);
+    console.log("Updated super user list:", superUsers.map(u => u.id));
     alert("Changes saved! Check the console for data.");
     setIsEditMode(false); // Switch back to preview mode
   }
@@ -135,7 +150,7 @@ export default function EditCollectionPage() {
   const handleCancel = () => {
       // Reset state to original collection data
       setRespondents(allUsers.filter(u => collection.userIds.includes(u.id)));
-      setSuperUserIds(collection.superUserIds || []);
+      setSuperUsers(allUsers.filter(u => (collection.superUserIds || []).includes(u.id)))
       setCohortType(collection.cohortType || '');
       setLogoDataUri(collection.logoDataUri || '');
       setSponsorMessage(collection.sponsorMessage || '');
@@ -147,7 +162,6 @@ export default function EditCollectionPage() {
     return allResponses.some(response => response.userId === userId && response.surveyId === surveyId);
   }
 
-  const assignedSuperUsers = allUsers.filter(u => superUserIds.includes(u.id));
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8">
@@ -228,13 +242,13 @@ export default function EditCollectionPage() {
                             <label className="text-sm font-medium">Add User Manually</label>
                             <div className="flex items-center gap-2">
                             <Input
-                                value={newUserName}
-                                onChange={(e) => setNewUserName(e.target.value)}
+                                value={newRespondentName}
+                                onChange={(e) => setNewRespondentName(e.target.value)}
                                 placeholder="User Name"
                             />
                             <Input
-                                value={newUserEmail}
-                                onChange={(e) => setNewUserEmail(e.target.value)}
+                                value={newRespondentEmail}
+                                onChange={(e) => setNewRespondentEmail(e.target.value)}
                                 placeholder="user@example.com"
                                 type="email"
                             />
@@ -378,25 +392,50 @@ export default function EditCollectionPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ShieldCheck /> Manage Super Users</CardTitle>
                     <CardDescription>
-                        Super users can view results and analytics.
+                        Super users can view results and analytics for this collection.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="max-h-96 overflow-y-auto space-y-2">
-                        {allUsers.map(user => (
-                             <Label key={user.id} htmlFor={`super-user-${user.id}`} className={`flex items-center justify-between p-3 bg-muted/30 rounded-md shadow-sm transition-colors ${isEditMode ? 'hover:bg-muted/60 cursor-pointer' : 'cursor-default'}`}>
-                                <div>
-                                    <p className="font-medium">{user.name}</p>
-                                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                                </div>
-                                <Checkbox
-                                    id={`super-user-${user.id}`}
-                                    checked={superUserIds.includes(user.id)}
-                                    onCheckedChange={() => handleSuperUserToggle(user.id)}
-                                    disabled={!isEditMode}
-                                />
-                            </Label>
-                        ))}
+                    {isEditMode && (
+                        <div className="space-y-2 mb-4">
+                            <label className="text-sm font-medium">Add Super User Manually</label>
+                            <div className="flex items-center gap-2">
+                            <Input
+                                value={newSuperUserName}
+                                onChange={(e) => setNewSuperUserName(e.target.value)}
+                                placeholder="Super User Name"
+                            />
+                            <Input
+                                value={newSuperUserEmail}
+                                onChange={(e) => setNewSuperUserEmail(e.target.value)}
+                                placeholder="superuser@example.com"
+                                type="email"
+                            />
+                            <Button type="button" onClick={handleAddSuperUser} variant="secondary">
+                                <UserPlus />
+                            </Button>
+                            </div>
+                        </div>
+                    )}
+                     <h4 className="text-sm font-medium mb-2">Assigned Super Users ({superUsers.length})</h4>
+                    <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
+                        {superUsers.length === 0 ? (
+                        <p className="text-sm text-center text-muted-foreground py-4">No super users assigned.</p>
+                        ) : (
+                        superUsers.map((user) => (
+                          <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                            </div>
+                            {isEditMode && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSuperUser(user.id)}>
+                                    <X className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            )}
+                          </div>
+                        ))
+                        )}
                     </div>
                 </CardContent>
             </Card>

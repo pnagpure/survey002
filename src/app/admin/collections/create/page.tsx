@@ -22,10 +22,8 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
-import { users as allUsers } from "@/lib/users"; // Import all users
 import { ArrowLeft, UserPlus, X, ShieldCheck, Building2, Upload, MessageSquare, Pencil } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
@@ -49,12 +47,15 @@ export default function CreateCollectionPage() {
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [users, setUsers] = useState<User[]>([]);
-  const [superUserIds, setSuperUserIds] = useState<string[]>([]);
-  
+
+  const [newSuperUserName, setNewSuperUserName] = useState('');
+  const [newSuperUserEmail, setNewSuperUserEmail] = useState('');
+  const [superUsers, setSuperUsers] = useState<User[]>([]);
+
   const router = useRouter();
 
-  // Handle adding a new user manually
-  const handleAddUser = () => {
+  // Handle adding a new respondent manually
+  const handleAddRespondent = () => {
     if (newUserName && newUserEmail) {
       const newUser: User = {
         id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
@@ -67,17 +68,27 @@ export default function CreateCollectionPage() {
     }
   };
   
-  const handleRemoveUser = (userId: string) => {
+  const handleRemoveRespondent = (userId: string) => {
     setUsers((prev) => prev.filter(user => user.id !== userId));
   }
-  
-  const handleSuperUserToggle = (userId: string) => {
-    setSuperUserIds((prev) => 
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+
+  // Handle adding a new super user manually
+  const handleAddSuperUser = () => {
+    if (newSuperUserName && newSuperUserEmail) {
+      const newSuperUser: User = {
+        id: `super-user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        name: newSuperUserName,
+        email: newSuperUserEmail,
+      };
+      setSuperUsers((prev) => [...prev, newSuperUser]);
+      setNewSuperUserName('');
+      setNewSuperUserEmail('');
+    }
   };
+  
+  const handleRemoveSuperUser = (userId: string) => {
+    setSuperUsers((prev) => prev.filter(user => user.id !== userId));
+  }
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -90,7 +101,7 @@ export default function CreateCollectionPage() {
     }
   }
 
-  // Handle Excel file upload
+  // Handle Excel file upload for respondents
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -121,7 +132,7 @@ export default function CreateCollectionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !surveyId || !schedule || users.length === 0) {
-      alert("Please fill all fields and add at least one user.");
+      alert("Please fill all fields and add at least one respondent.");
       return;
     };
 
@@ -136,8 +147,8 @@ export default function CreateCollectionPage() {
       sponsorMessage,
       sponsorSignature,
       status: new Date(schedule) <= new Date() ? 'active' : 'pending',
-      users, // In a real app, you would save user IDs
-      superUserIds,
+      userIds: users.map(u => u.id),
+      superUserIds: superUsers.map(u => u.id),
     });
 
     alert('Collection created successfully! Check the console for data.');
@@ -241,26 +252,26 @@ export default function CreateCollectionPage() {
             <div className="space-y-4 rounded-lg border p-4">
                 <h3 className="text-lg font-medium">Manage Respondents</h3>
                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Add User Manually</label>
+                    <label className="text-sm font-medium">Add Respondent Manually</label>
                     <div className="flex items-center gap-2">
                       <Input
                         value={newUserName}
                         onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="User Name"
+                        placeholder="Respondent Name"
                       />
                       <Input
                         value={newUserEmail}
                         onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="user@example.com"
+                        placeholder="respondent@example.com"
                         type="email"
                       />
-                      <Button type="button" onClick={handleAddUser} variant="secondary">
+                      <Button type="button" onClick={handleAddRespondent} variant="secondary">
                         <UserPlus />
                       </Button>
                     </div>
                 </div>
                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Or Upload from Excel</label>
+                    <label className="text-sm font-medium">Or Upload Respondents from Excel</label>
                     <div className="flex items-center gap-2">
                        <Input
                         type="file"
@@ -276,7 +287,7 @@ export default function CreateCollectionPage() {
                     <h4 className="text-sm font-medium mb-2">Added Respondents ({users.length})</h4>
                     <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
                         {users.length === 0 ? (
-                        <p className="text-sm text-center text-muted-foreground py-4">No users added yet.</p>
+                        <p className="text-sm text-center text-muted-foreground py-4">No respondents added yet.</p>
                         ) : (
                         users.map((user) => (
                           <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
@@ -284,7 +295,7 @@ export default function CreateCollectionPage() {
                                 <p className="font-medium">{user.name}</p>
                                 <p className="text-xs text-muted-foreground">{user.email}</p>
                             </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveUser(user.id)}>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveRespondent(user.id)}>
                                 <X className="h-4 w-4 text-destructive"/>
                             </Button>
                           </div>
@@ -296,28 +307,44 @@ export default function CreateCollectionPage() {
             
             <div className="space-y-4 rounded-lg border p-4">
                 <h3 className="text-lg font-medium flex items-center gap-2"><ShieldCheck /> Manage Super Users</h3>
-                <p className="text-sm text-muted-foreground">
+                 <p className="text-sm text-muted-foreground">
                     Super users can view results and perform analytics for this collection.
                 </p>
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium">Add Super User Manually</label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newSuperUserName}
+                        onChange={(e) => setNewSuperUserName(e.target.value)}
+                        placeholder="Super User Name"
+                      />
+                      <Input
+                        value={newSuperUserEmail}
+                        onChange={(e) => setNewSuperUserEmail(e.target.value)}
+                        placeholder="superuser@example.com"
+                        type="email"
+                      />
+                      <Button type="button" onClick={handleAddSuperUser} variant="secondary">
+                        <UserPlus />
+                      </Button>
+                    </div>
+                </div>
+                
                  <div>
-                    <h4 className="text-sm font-medium mb-2">Select Super Users</h4>
+                    <h4 className="text-sm font-medium mb-2">Added Super Users ({superUsers.length})</h4>
                     <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
-                        {allUsers.length === 0 ? (
-                            <p className="text-sm text-center text-muted-foreground py-4">No users available in the system.</p>
+                        {superUsers.length === 0 ? (
+                        <p className="text-sm text-center text-muted-foreground py-4">No super users added yet.</p>
                         ) : (
-                        allUsers.map((user) => (
+                        superUsers.map((user) => (
                           <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
-                              <Label htmlFor={`super-user-${user.id}`} className="flex items-center gap-3 w-full cursor-pointer">
-                                <Checkbox
-                                    id={`super-user-${user.id}`}
-                                    checked={superUserIds.includes(user.id)}
-                                    onCheckedChange={() => handleSuperUserToggle(user.id)}
-                                />
-                                 <div>
-                                    <p className="font-medium">{user.name}</p>
-                                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                                </div>
-                              </Label>
+                            <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSuperUser(user.id)}>
+                                <X className="h-4 w-4 text-destructive"/>
+                            </Button>
                           </div>
                         ))
                         )}
