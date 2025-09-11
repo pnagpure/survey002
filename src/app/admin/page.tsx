@@ -19,10 +19,12 @@ import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft, Send } from "l
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function AdminPage() {
-  const surveys = getAllSurveys();
-  const responses = getAllResponses();
-  const surveyCollections = getAllSurveyCollections();
+export default async function AdminPage() {
+  const [surveys, responses, surveyCollections] = await Promise.all([
+      getAllSurveys(),
+      getAllResponses(),
+      getAllSurveyCollections()
+  ]);
 
   const totalSurveys = surveys.length;
   const totalResponses = responses.length;

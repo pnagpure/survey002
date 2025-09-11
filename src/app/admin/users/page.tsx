@@ -22,16 +22,27 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useEffect, useState } from "react";
+import type { User } from "@/lib/types";
 
 
 export default function AdminUsersPage() {
-  const users = getAllUsers();
+  const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchUsers() {
+        const fetchedUsers = await getAllUsers();
+        setUsers(fetchedUsers);
+    }
+    fetchUsers();
+  }, []);
 
   const handleDeleteUser = async (userId: string) => {
     const result = await deleteUser(userId);
     if(result.success) {
         toast({ title: 'User Deleted', description: 'The user has been removed from the system.' });
+        setUsers(users.filter(u => u.id !== userId));
     } else {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
     }
@@ -53,7 +64,7 @@ export default function AdminUsersPage() {
                     Back to Admin
                 </Link>
              </Button>
-             <AddUserDialog />
+             <AddUserDialog onUserAdded={async () => setUsers(await getAllUsers())}/>
            </div>
       </header>
     <main className="flex-1 p-4 md:p-8">
@@ -114,5 +125,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    

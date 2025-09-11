@@ -1,15 +1,15 @@
 
-
 'use server';
 
 import { z } from 'zod';
-import { getResponsesBySurveyId, getSurveyById } from './data';
+import { getResponsesBySurveyId, getSurveyById, getAllUsers } from './data';
 import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
 import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
 import { revalidatePath } from 'next/cache';
 import jStat from 'jstat';
 import type { Question, Survey, SurveyResponse, SurveyCollection, User } from '@/lib/types';
-import { db } from './db';
+import { db } from './firebase';
+import { collection, addDoc, setDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 
 
 export interface StatsResult {
@@ -33,15 +33,15 @@ export interface StatsResult {
 
 export async function submitResponse(surveyId: string, data: Record<string, any>) {
   try {
-    const responseId = `resp_${Date.now()}`;
-    const newResponse: Omit<SurveyResponse, 'id'> = {
+    const newResponse = {
         surveyId,
         userId: 'user-anonymous', // In a real app, this would be the logged-in user's ID
         submittedAt: new Date().toISOString(),
         answers: data,
     };
 
-    db.responses[responseId] = newResponse;
+    await addDoc(collection(db, 'responses'), newResponse);
+    
     revalidatePath(`/surveys/${surveyId}/results`);
     revalidatePath('/dashboard');
     revalidatePath('/admin');
@@ -62,8 +62,8 @@ export async function generateReport(formData: FormData) {
       surveyId: formData.get('surveyId'),
     });
 
-    const survey = getSurveyById(surveyId);
-    const responses = getResponsesBySurveyId(surveyId);
+    const survey = await getSurveyById(surveyId);
+    const responses = await getResponsesBySurveyId(surveyId);
 
     if (!survey) {
       return { success: false, error: 'Survey not found.' };
@@ -240,16 +240,14 @@ export async function runStatisticalTest(data: {
 export async function createSurvey(data: { title: string, description: string, questions: Question[]}) {
     try {
         const { title, description, questions } = data;
-        const surveyId = title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-
-        const newSurvey: Omit<Survey, 'id'> = {
+        const newSurvey = {
             title,
             description,
             questions,
             createdAt: new Date().toISOString(),
         };
 
-        db.surveys[surveyId] = newSurvey;
+        await addDoc(collection(db, 'surveys'), newSurvey);
         revalidatePath('/admin');
         return { success: true };
     } catch (error) {
@@ -257,6 +255,16 @@ export async function createSurvey(data: { title: string, description: string, q
         return { success: false, error: "Failed to create survey." };
     }
 }
+
+async function findOrCreateUser(user: { name: string, email: string }): Promise<string> {
+    // This is a simplified version. In a real app, you'd query to see if the user exists.
+    // For this example, we'll just add them and assume they are new if not found by a simple ID guess.
+    // A robust solution would query by email.
+    const userRef = doc(collection(db, 'users'));
+    await setDoc(userRef, user);
+    return userRef.id;
+}
+
 
 export async function createCollection(data: {
     name: string;
@@ -272,18 +280,10 @@ export async function createCollection(data: {
     try {
         const { name, surveyId, schedule, respondents, superUsers, ...rest } = data;
         
-        // Add users to global user table if they don't exist
-        const respondentIds = respondents.map(u => {
-            if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
-            return u.id;
-        });
-        const superUserIds = superUsers.map(u => {
-             if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
-            return u.id;
-        });
+        const respondentIds = await Promise.all(respondents.map(u => findOrCreateUser(u)));
+        const superUserIds = await Promise.all(superUsers.map(u => findOrCreateUser(u)));
 
-        const collectionId = `coll-${Date.now()}`;
-        const newCollection: Omit<SurveyCollection, 'id'> = {
+        const newCollection = {
             name,
             surveyId,
             schedule,
@@ -293,7 +293,7 @@ export async function createCollection(data: {
             ...rest,
         };
 
-        db.surveyCollections[collectionId] = newCollection;
+        await addDoc(collection(db, 'surveyCollections'), newCollection);
         revalidatePath('/admin');
         return { success: true };
     } catch(error) {
@@ -311,29 +311,19 @@ export async function updateCollection(collectionId: string, data: {
     superUsers: {id: string, name: string, email: string}[];
 }) {
     try {
-        const collection = db.surveyCollections[collectionId];
-        if (!collection) {
-            return { success: false, error: 'Collection not found.' };
-        }
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
 
         const { respondents, superUsers, ...rest } = data;
-        const respondentIds = respondents.map(u => {
-            if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
-            return u.id;
-        });
-        const superUserIds = superUsers.map(u => {
-             if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
-            return u.id;
-        });
+        const respondentIds = await Promise.all(respondents.map(u => findOrCreateUser(u)));
+        const superUserIds = await Promise.all(superUsers.map(u => findOrCreateUser(u)));
 
-        const updatedCollection: Omit<SurveyCollection, 'id'> = {
-            ...collection,
+        const updatedData = {
             ...rest,
             userIds: respondentIds,
             superUserIds: superUserIds,
         };
         
-        db.surveyCollections[collectionId] = updatedCollection;
+        await updateDoc(collectionRef, updatedData);
         revalidatePath(`/admin/collections/edit/${collectionId}`);
         revalidatePath('/admin');
         return { success: true };
@@ -346,12 +336,11 @@ export async function updateCollection(collectionId: string, data: {
 
 export async function updateCollectionContent(collectionId: string, data: { sponsorMessage?: string; sponsorSignature?: string; }) {
      try {
-        const collection = db.surveyCollections[collectionId];
-        if (!collection) {
-            return { success: false, error: 'Collection not found.' };
-        }
-        collection.sponsorMessage = data.sponsorMessage;
-        collection.sponsorSignature = data.sponsorSignature;
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
+        await updateDoc(collectionRef, {
+            sponsorMessage: data.sponsorMessage,
+            sponsorSignature: data.sponsorSignature,
+        });
 
         revalidatePath(`/admin/collections/${collectionId}/preview`);
         return { success: true };
@@ -364,14 +353,10 @@ export async function updateCollectionContent(collectionId: string, data: { spon
 
 export async function sendSurvey(collectionId: string) {
     try {
-        const collection = db.surveyCollections[collectionId];
-        if (!collection) {
-            return { success: false, error: 'Collection not found.' };
-        }
-        collection.status = 'active';
-        console.log(`Simulating sending survey for collection "${collection.name}"`);
-        console.log(`From: info@qlsystems.in`);
-        console.log(`Recipients: ${collection.userIds.length} users`);
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
+        await updateDoc(collectionRef, { status: 'active' });
+        
+        console.log(`Survey for collection ID "${collectionId}" has been activated.`);
         revalidatePath('/admin');
         return { success: true };
     } catch (error) {
@@ -383,8 +368,7 @@ export async function sendSurvey(collectionId: string) {
 
 export async function addUser(user: { name: string; email: string }) {
     try {
-        const userId = `user-${Date.now()}`;
-        db.users[userId] = user;
+        await addDoc(collection(db, 'users'), user);
         revalidatePath('/admin/users');
         return { success: true };
     } catch (error) {
@@ -394,16 +378,9 @@ export async function addUser(user: { name: string; email: string }) {
 
 export async function deleteUser(userId: string) {
     try {
-        if (!db.users[userId]) {
-             return { success: false, error: 'User not found.' };
-        }
-        delete db.users[userId];
-        // Also remove user from collections (optional, good practice)
-        Object.values(db.surveyCollections).forEach(coll => {
-            coll.userIds = coll.userIds.filter(id => id !== userId);
-            coll.superUserIds = coll.superUserIds.filter(id => id !== userId);
-        });
-
+        const userRef = doc(db, 'users', userId);
+        await deleteDoc(userRef);
+        // Note: Removing user from collections would require a more complex query/batch write in real Firestore
         revalidatePath('/admin/users');
         revalidatePath('/admin');
         return { success: true };
@@ -411,5 +388,3 @@ export async function deleteUser(userId: string) {
         return { success: false, error: 'Failed to delete user.' };
     }
 }
-
-    

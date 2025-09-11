@@ -6,8 +6,8 @@ import { ExternalLink, BarChart2, CheckSquare, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import QuestionTypeTable from "@/components/question-type-table";
 
-export default function DashboardPage() {
-  const surveys = getAllSurveys();
+export default async function DashboardPage() {
+  const surveys = await getAllSurveys();
   return (
     <div className="flex flex-col gap-8">
       <div>

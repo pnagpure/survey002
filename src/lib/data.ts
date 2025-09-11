@@ -1,61 +1,73 @@
-/**
- * @fileoverview
- * This file contains data access functions for the application.
- * It reads from the local "database" in `db.ts` and transforms the data
- * into the array format expected by the components.
- */
 
-import { db } from './db';
+import { db } from './firebase';
 import type { Survey, SurveyResponse, SurveyCollection, User } from './types';
+import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
 
-
-// Helper function to convert a collection object to an array with IDs
-function collectionToArray<T>(collection: Record<string, Omit<T, 'id'>>): T[] {
-    return Object.entries(collection).map(([id, data]) => ({
-        id,
-        ...data,
-    } as T));
+export async function getAllSurveys(): Promise<Survey[]> {
+    const surveysCol = collection(db, 'surveys');
+    const surveySnapshot = await getDocs(surveysCol);
+    const surveyList = surveySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Survey));
+    return surveyList;
 }
 
-export function getAllSurveys(): Survey[] {
-    return collectionToArray<Survey>(db.surveys);
+export async function getAllResponses(): Promise<SurveyResponse[]> {
+    const responsesCol = collection(db, 'responses');
+    const responseSnapshot = await getDocs(responsesCol);
+    const responseList = responseSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SurveyResponse));
+    return responseList;
 }
 
-export function getAllResponses(): SurveyResponse[] {
-    return collectionToArray<SurveyResponse>(db.responses);
+export async function getAllSurveyCollections(): Promise<SurveyCollection[]> {
+    const collectionsCol = collection(db, 'surveyCollections');
+    const collectionSnapshot = await getDocs(collectionsCol);
+    const collectionList = collectionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SurveyCollection));
+    return collectionList;
 }
 
-export function getAllSurveyCollections(): SurveyCollection[] {
-    return collectionToArray<SurveyCollection>(db.surveyCollections);
+export async function getAllUsers(): Promise<User[]> {
+    const usersCol = collection(db, 'users');
+    const userSnapshot = await getDocs(usersCol);
+    const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+    return userList;
 }
 
-export function getAllUsers(): User[] {
-    return collectionToArray<User>(db.users);
+export async function getSurveyById(id: string): Promise<Survey | undefined> {
+  const surveyDoc = doc(db, 'surveys', id);
+  const surveySnapshot = await getDoc(surveyDoc);
+  if (surveySnapshot.exists()) {
+    return { id: surveySnapshot.id, ...surveySnapshot.data() } as Survey;
+  }
+  return undefined;
 }
 
-export function getSurveyById(id: string): Survey | undefined {
-  const surveyData = db.surveys[id];
-  return surveyData ? { id, ...surveyData } : undefined;
+export async function getResponsesBySurveyId(surveyId: string): Promise<SurveyResponse[]> {
+  const responsesCol = collection(db, 'responses');
+  const q = query(responsesCol, where('surveyId', '==', surveyId));
+  const responseSnapshot = await getDocs(q);
+  return responseSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SurveyResponse));
 }
 
-export function getResponsesBySurveyId(surveyId: string): SurveyResponse[] {
-  return Object.entries(db.responses)
-    .filter(([, response]) => response.surveyId === surveyId)
-    .map(([id, response]) => ({ id, ...response }));
+export async function getSurveyCollectionById(id: string): Promise<SurveyCollection | undefined> {
+  const collectionDoc = doc(db, 'surveyCollections', id);
+  const collectionSnapshot = await getDoc(collectionDoc);
+  if (collectionSnapshot.exists()) {
+    return { id: collectionSnapshot.id, ...collectionSnapshot.data() } as SurveyCollection;
+  }
+  return undefined;
 }
 
-export function getSurveyCollectionById(id: string): SurveyCollection | undefined {
-  const collectionData = db.surveyCollections[id];
-  return collectionData ? { id, ...collectionData } : undefined;
+export async function getSurveyCollectionsBySurveyId(surveyId: string): Promise<SurveyCollection[]> {
+    const collectionsCol = collection(db, 'surveyCollections');
+    const q = query(collectionsCol, where('surveyId', '==', surveyId));
+    const collectionSnapshot = await getDocs(q);
+    return collectionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SurveyCollection));
 }
 
-export function getSurveyCollectionsBySurveyId(surveyId: string): SurveyCollection[] {
-    return Object.entries(db.surveyCollections)
-      .filter(([, collection]) => collection.surveyId === surveyId)
-      .map(([id, collection]) => ({ id, ...collection }));
-}
-
-export function getUserById(id: string): User | undefined {
-    const userData = db.users[id];
-    return userData ? { id, ...userData } : undefined;
+export async function getUserById(id: string): Promise<User | undefined> {
+    const userDoc = doc(db, 'users', id);
+    const userSnapshot = await getDoc(userDoc);
+    if(userSnapshot.exists()) {
+        return { id: userSnapshot.id, ...userSnapshot.data() } as User;
+    }
+    return undefined;
 }

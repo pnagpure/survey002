@@ -16,8 +16,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+async function SurveyList() {
+    const surveys = await getAllSurveys();
+
+    // Fetch all responses in parallel
+    const responsesPromises = surveys.map(survey => getResponsesBySurveyId(survey.id));
+    const responsesBySurvey = await Promise.all(responsesPromises);
+
+    return (
+        <div className="space-y-1 mt-2">
+          {surveys.map((survey, index) => (
+            <Link key={survey.id} href={`/surveys/${survey.id}/results`} className="block">
+              <div className="flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground truncate flex-1">{survey.title}</span>
+                <Badge variant="secondary">{responsesBySurvey[index].length}</Badge>
+              </div>
+            </Link>
+          ))}
+        </div>
+    )
+}
+
 export function MainSidebar() {
-  const surveys = getAllSurveys();
   return (
     <aside className="w-80 min-w-80 hidden lg:flex flex-col gap-4 border-r bg-card p-4">
       <div className="flex items-center gap-3 p-2">
@@ -46,17 +67,7 @@ export function MainSidebar() {
         <h2 className="px-2 text-sm font-semibold tracking-tight text-muted-foreground uppercase">
           Surveys
         </h2>
-        <div className="space-y-1 mt-2">
-          {surveys.map((survey) => (
-            <Link key={survey.id} href={`/surveys/${survey.id}/results`} className="block">
-              <div className="flex items-center gap-3 rounded-md p-2 hover:bg-muted transition-colors">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground truncate flex-1">{survey.title}</span>
-                <Badge variant="secondary">{getResponsesBySurveyId(survey.id).length}</Badge>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <SurveyList />
       </div>
     </aside>
   );

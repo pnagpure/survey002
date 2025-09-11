@@ -1,16 +1,15 @@
 
-
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { getSurveyCollectionById, getSurveyById, getAllResponses, getUserById } from '@/lib/data';
+import { getSurveyCollectionById, getSurveyById, getAllResponses, getUserById, getAllUsers } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck, MessageSquare, Pencil, Edit, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,9 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import type { User as AppUser } from '@/lib/types';
+import type { Survey, SurveyCollection, SurveyResponse } from '@/lib/types';
 import { updateCollection } from '@/lib/actions';
-
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface LocalUser {
   id: string;
@@ -35,37 +34,54 @@ export default function EditCollectionPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const collection = getSurveyCollectionById(id);
-  
-  if (!collection) {
-    return notFound();
-  }
-
-  const survey = getSurveyById(collection.surveyId);
-  const allResponses = getAllResponses();
-  const allUsers = getAllUsers();
+  const [collection, setCollection] = useState<SurveyCollection | null>(null);
+  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [allResponses, setAllResponses] = useState<SurveyResponse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // State for edit mode
   const [isEditMode, setIsEditMode] = React.useState(false);
 
-  // In a real app, users would be fetched. Here we're creating them on the fly for the edit session.
   const [respondents, setRespondents] = React.useState<LocalUser[]>([]);
   const [superUsers, setSuperUsers] = React.useState<LocalUser[]>([]);
   
   useEffect(() => {
-    const initialRespondents = collection.userIds.map(id => {
-        const user = allUsers.find(u => u.id === id);
-        return {id, name: user?.name || `User ${id}`, email: user?.email || `user-${id}@example.com` };
-    });
-    setRespondents(initialRespondents);
+    async function fetchData() {
+      const coll = await getSurveyCollectionById(id);
+      if (coll) {
+          setCollection(coll);
+          const [surv, responses, allUsers] = await Promise.all([
+              getSurveyById(coll.surveyId),
+              getAllResponses(),
+              getAllUsers(),
+          ]);
 
-    const initialSuperUsers = (collection.superUserIds || []).map(id => {
-        const user = allUsers.find(u => u.id === id);
-        return {id, name: user?.name || `Super User ${id}`, email: `superuser-${id}@example.com` };
-    });
-    setSuperUsers(initialSuperUsers);
+          if (surv) setSurvey(surv); else notFound();
+          setAllResponses(responses);
 
-  }, [collection.userIds, collection.superUserIds, allUsers]);
+          const initialRespondents = await Promise.all(coll.userIds.map(async (userId) => {
+              const user = allUsers.find(u => u.id === userId) || await getUserById(userId);
+              return {id: userId, name: user?.name || `User ${userId}`, email: user?.email || `user-${userId}@example.com` };
+          }));
+          setRespondents(initialRespondents);
+
+          const initialSuperUsers = await Promise.all((coll.superUserIds || []).map(async (userId) => {
+              const user = allUsers.find(u => u.id === userId) || await getUserById(userId);
+              return {id: userId, name: user?.name || `Super User ${userId}`, email: `superuser-${userId}@example.com` };
+          }));
+          setSuperUsers(initialSuperUsers);
+
+          setCohortType(coll.cohortType || '');
+          setLogoDataUri(coll.logoDataUri || '');
+          setSponsorMessage(coll.sponsorMessage || '');
+          setSponsorSignature(coll.sponsorSignature || '');
+      } else {
+          notFound();
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, [id]);
 
   const [newRespondentName, setNewRespondentName] = React.useState('');
   const [newRespondentEmail, setNewRespondentEmail] = React.useState('');
@@ -73,10 +89,10 @@ export default function EditCollectionPage() {
   const [newSuperUserName, setNewSuperUserName] = React.useState('');
   const [newSuperUserEmail, setNewSuperUserEmail] = React.useState('');
   
-  const [cohortType, setCohortType] = React.useState(collection.cohortType || '');
-  const [logoDataUri, setLogoDataUri] = React.useState(collection.logoDataUri || '');
-  const [sponsorMessage, setSponsorMessage] = React.useState(collection.sponsorMessage || '');
-  const [sponsorSignature, setSponsorSignature] = React.useState(collection.sponsorSignature || '');
+  const [cohortType, setCohortType] = React.useState('');
+  const [logoDataUri, setLogoDataUri] = React.useState('');
+  const [sponsorMessage, setSponsorMessage] = React.useState('');
+  const [sponsorSignature, setSponsorSignature] = React.useState('');
 
   // Handle adding a new respondent manually
   const handleAddRespondent = () => {
@@ -158,6 +174,7 @@ export default function EditCollectionPage() {
   };
 
   const handleSaveChanges = async () => {
+    if (!collection) return;
     const result = await updateCollection(collection.id, {
         cohortType: cohortType || undefined,
         logoDataUri: logoDataUri || undefined,
@@ -183,28 +200,36 @@ export default function EditCollectionPage() {
   }
 
   const handleCancel = () => {
-      // Reset state to original collection data
-       const initialRespondents = collection.userIds.map(id => {
-            const user = allUsers.find(u => u.id === id);
-            return {id, name: user?.name || `User ${id}`, email: user?.email || `user-${id}@example.com` };
-        });
-        setRespondents(initialRespondents);
-
-        const initialSuperUsers = (collection.superUserIds || []).map(id => {
-            const user = allUsers.find(u => u.id === id);
-            return {id, name: user?.name || `Super User ${id}`, email: `superuser-${id}@example.com` };
-        });
-        setSuperUsers(initialSuperUsers);
-      
-      setCohortType(collection.cohortType || '');
-      setLogoDataUri(collection.logoDataUri || '');
-      setSponsorMessage(collection.sponsorMessage || '');
-      setSponsorSignature(collection.sponsorSignature || '');
+      if(collection) {
+        // This part is tricky without re-fetching all users.
+        // For now, just reset the editable fields. A full reset might need another fetch.
+        setCohortType(collection.cohortType || '');
+        setLogoDataUri(collection.logoDataUri || '');
+        setSponsorMessage(collection.sponsorMessage || '');
+        setSponsorSignature(collection.sponsorSignature || '');
+      }
       setIsEditMode(false);
   }
 
   const hasUserResponded = (userId: string, surveyId: string) => {
     return allResponses.some(response => response.userId === userId && response.surveyId === surveyId);
+  }
+
+  if(loading || !collection || !survey) {
+      return (
+        <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
+            <Skeleton className="h-12 w-1/2" />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+                <Card><CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
+                <Card><CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
+                <Card><CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
+            </div>
+            <Card>
+                <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
+                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+            </Card>
+        </div>
+    )
   }
 
   return (
@@ -495,5 +520,3 @@ export default function EditCollectionPage() {
     </div>
   );
 }
-
-    

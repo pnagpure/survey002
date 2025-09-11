@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -29,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { createCollection } from '@/lib/actions';
+import type { Survey } from '@/lib/types';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -54,11 +54,18 @@ export default function CreateCollectionPage() {
   const [newSuperUserEmail, setNewSuperUserEmail] = useState('');
   const [superUsers, setSuperUsers] = useState<User[]>([]);
 
+  const [surveys, setSurveys] = useState<Survey[]>([]);
+
   const router = useRouter();
   const { toast } = useToast();
 
-  // In a real app, surveys would be fetched async
-  const surveys = getAllSurveys();
+  useEffect(() => {
+    async function fetchSurveys() {
+        const fetchedSurveys = await getAllSurveys();
+        setSurveys(fetchedSurveys);
+    }
+    fetchSurveys();
+  }, []);
 
   // Handle adding a new respondent manually
   const handleAddRespondent = () => {
@@ -390,5 +397,3 @@ export default function CreateCollectionPage() {
     </div>
   );
 }
-
-    

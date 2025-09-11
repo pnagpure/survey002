@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -21,9 +20,10 @@ import { addUser } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 
 
-export function AddUserDialog() {
+export function AddUserDialog({ onUserAdded }: { onUserAdded: () => void }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async () => {
@@ -37,13 +37,15 @@ export function AddUserDialog() {
         toast({ title: 'User Added', description: 'The new administrator has been added.' });
         setName('');
         setEmail('');
+        onUserAdded();
+        setOpen(false);
     } else {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
     }
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Add User
@@ -71,13 +73,10 @@ export function AddUserDialog() {
           </div>
         </div>
         <DialogFooter>
-          <DialogClose asChild>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" onClick={handleSubmit}>Save User</Button>
-          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-    

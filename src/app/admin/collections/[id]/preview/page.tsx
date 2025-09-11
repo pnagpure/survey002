@@ -1,15 +1,14 @@
 
-
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { getSurveyCollectionById, getSurveyById, getAllResponses } from '@/lib/data';
+import { getSurveyCollectionById, getSurveyById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Eye, MessageSquare, Pencil, Send, CheckCircle, Save } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +17,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { sendSurvey, updateCollectionContent } from '@/lib/actions';
+import type { Survey, SurveyCollection } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PreviewSurveyPage() {
   const params = useParams();
@@ -25,27 +26,41 @@ export default function PreviewSurveyPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const collection = getSurveyCollectionById(id);
+  const [collection, setCollection] = useState<SurveyCollection | null>(null);
+  const [survey, setSurvey] = useState<Survey | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      const coll = await getSurveyCollectionById(id);
+      if (coll) {
+        setCollection(coll);
+        const surv = await getSurveyById(coll.surveyId);
+        if (surv) {
+          setSurvey(surv);
+          setSponsorMessage(coll.sponsorMessage || '');
+          setSponsorSignature(coll.sponsorSignature || '');
+        } else {
+           notFound();
+        }
+      } else {
+        notFound();
+      }
+      setLoading(false);
+    }
+    fetchData();
+  }, [id]);
   
-  if (!collection) {
-    return notFound();
-  }
-
-  const survey = getSurveyById(collection.surveyId);
-
-  if (!survey) {
-      return notFound();
-  }
-
   // State for edit mode
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [isSaved, setIsSaved] = React.useState(true);
 
   // State for editable fields
-  const [sponsorMessage, setSponsorMessage] = React.useState(collection.sponsorMessage || '');
-  const [sponsorSignature, setSponsorSignature] = React.useState(collection.sponsorSignature || '');
+  const [sponsorMessage, setSponsorMessage] = React.useState('');
+  const [sponsorSignature, setSponsorSignature] = React.useState('');
   
   const handleSaveChanges = async () => {
+    if (!collection) return;
     const result = await updateCollectionContent(collection.id, {
         sponsorMessage,
         sponsorSignature,
@@ -62,13 +77,16 @@ export default function PreviewSurveyPage() {
 
   const handleCancel = () => {
       // Reset state to original collection data
-      setSponsorMessage(collection.sponsorMessage || '');
-      setSponsorSignature(collection.sponsorSignature || '');
+      if (collection) {
+        setSponsorMessage(collection.sponsorMessage || '');
+        setSponsorSignature(collection.sponsorSignature || '');
+      }
       setIsEditMode(false);
       setIsSaved(true); // Since we reverted, it's "saved"
   }
 
   const handleSendSurvey = async () => {
+      if (!collection) return;
       const result = await sendSurvey(collection.id);
       
       if (result.success) {
@@ -89,6 +107,23 @@ export default function PreviewSurveyPage() {
   const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setter(e.target.value);
       setIsSaved(false);
+  }
+
+  if (loading || !collection || !survey) {
+    return (
+        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8">
+            <Skeleton className="h-12 w-1/2" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-40 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    )
   }
 
   return (
@@ -194,5 +229,3 @@ export default function PreviewSurveyPage() {
     </div>
   );
 }
-
-    

@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import { SurveyResults } from "@/components/survey-results";
 import { ShareButton } from "@/components/share-button";
 
-export default function SurveyResultsPage({
+export default async function SurveyResultsPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const survey = getSurveyById(params.id);
-  const responses = getResponsesBySurveyId(params.id);
+  const survey = await getSurveyById(params.id);
+  const responses = await getResponsesBySurveyId(params.id);
 
   if (!survey) {
     notFound();
