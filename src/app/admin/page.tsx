@@ -1,4 +1,4 @@
-import { surveys, responses, surveyCollections } from "@/lib/data";
+import { getAllSurveys, getAllResponses, getAllSurveyCollections } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -20,6 +20,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function AdminPage() {
+  const surveys = getAllSurveys();
+  const responses = getAllResponses();
+  const surveyCollections = getAllSurveyCollections();
+
   const totalSurveys = surveys.length;
   const totalResponses = responses.length;
   const averageResponses =

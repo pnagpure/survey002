@@ -6,7 +6,7 @@ import {
   BarChart2,
   Shield,
 } from "lucide-react";
-import { surveys } from "@/lib/data";
+import { getAllSurveys, getResponsesBySurveyId } from "@/lib/data";
 import {
   Card,
   CardContent,
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export function MainSidebar() {
+  const surveys = getAllSurveys();
   return (
     <aside className="w-80 min-w-80 hidden lg:flex flex-col gap-4 border-r bg-card p-4">
       <div className="flex items-center gap-3 p-2">
@@ -60,6 +61,3 @@ export function MainSidebar() {
     </aside>
   );
 }
-
-// Helper to get response count, since it's not on the survey object
-import { getResponsesBySurveyId } from "@/lib/data";

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { users } from "@/lib/users";
+import { getAllUsers } from "@/lib/data";
 import { Users, ArrowLeft, Trash2 } from "lucide-react";
 import { AddUserDialog } from "./_components/add-user-dialog";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 
 export default function AdminUsersPage() {
+  const users = getAllUsers();
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">

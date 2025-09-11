@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { surveys } from "@/lib/data"; // In a real app, replace with Firestore query
+import { getAllSurveys } from "@/lib/data"; // In a real app, replace with Firestore query
 import { ArrowLeft, UserPlus, X, ShieldCheck, Building2, Upload, MessageSquare, Pencil } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,9 @@ export default function CreateCollectionPage() {
   const [superUsers, setSuperUsers] = useState<User[]>([]);
 
   const router = useRouter();
+
+  // In a real app, surveys would be fetched async
+  const surveys = getAllSurveys();
 
   // Handle adding a new respondent manually
   const handleAddRespondent = () => {

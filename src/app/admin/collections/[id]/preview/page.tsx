@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { getSurveyCollectionById, getSurveyById, responses as allResponses } from '@/lib/data';
+import { getSurveyCollectionById, getSurveyById, getAllResponses } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

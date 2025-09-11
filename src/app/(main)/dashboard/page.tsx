@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { surveys } from "@/lib/data";
+import { getAllSurveys } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink, BarChart2, CheckSquare, Plus } from "lucide-react";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import QuestionTypeTable from "@/components/question-type-table";
 
 export default function DashboardPage() {
+  const surveys = getAllSurveys();
   return (
     <div className="flex flex-col gap-8">
       <div>

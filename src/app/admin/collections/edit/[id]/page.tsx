@@ -3,8 +3,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { getSurveyCollectionById, getSurveyById, responses as allResponses } from '@/lib/data';
-import { users as allUsers } from '@/lib/users';
+import { getSurveyCollectionById, getSurveyById, getAllResponses, getUserById } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 
-interface User {
+interface LocalUser {
   id: string;
   name: string;
   email: string;
@@ -38,15 +37,14 @@ export default function EditCollectionPage() {
   }
 
   const survey = getSurveyById(collection.surveyId);
+  const allResponses = getAllResponses();
 
   // State for edit mode
   const [isEditMode, setIsEditMode] = React.useState(false);
 
-  // State for editable fields
-  const [respondents, setRespondents] = React.useState<User[]>(allUsers.filter(u => collection.userIds.includes(u.id)));
-  
-  // Super users are also managed as a separate list within the collection
-  const [superUsers, setSuperUsers] = React.useState<User[]>(allUsers.filter(u => (collection.superUserIds || []).includes(u.id)));
+  // In a real app, users would be fetched. Here we're creating them on the fly for the edit session.
+  const [respondents, setRespondents] = React.useState<LocalUser[]>(collection.userIds.map((id, index) => ({id, name: `User ${id}`, email: `user${index}@example.com` })));
+  const [superUsers, setSuperUsers] = React.useState<LocalUser[]>((collection.superUserIds || []).map((id, index) => ({id, name: `Super User ${id}`, email: `superuser${index}@example.com` })));
   
   const [newRespondentName, setNewRespondentName] = React.useState('');
   const [newRespondentEmail, setNewRespondentEmail] = React.useState('');
@@ -62,7 +60,7 @@ export default function EditCollectionPage() {
   // Handle adding a new respondent manually
   const handleAddRespondent = () => {
     if (newRespondentName && newRespondentEmail) {
-      const newUser: User = {
+      const newUser: LocalUser = {
         id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         name: newRespondentName,
         email: newRespondentEmail,
@@ -80,7 +78,7 @@ export default function EditCollectionPage() {
   // Handle adding a new super user manually
   const handleAddSuperUser = () => {
     if (newSuperUserName && newSuperUserEmail) {
-      const newSuperUser: User = {
+      const newSuperUser: LocalUser = {
         id: `super-user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         name: newSuperUserName,
         email: newSuperUserEmail,
@@ -121,7 +119,7 @@ export default function EditCollectionPage() {
             id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
             name: row.Name || row.name || '',
             email: row.Email || row.email || '',
-          })).filter((user: User) => user.name && user.email);
+          })).filter((user: LocalUser) => user.name && user.email);
           setRespondents((prev) => [...prev, ...newUsers]);
         } catch (error) {
           console.error("Error parsing Excel file:", error);
@@ -141,16 +139,16 @@ export default function EditCollectionPage() {
     console.log("Updated logoDataUri:", logoDataUri.substring(0, 50) + '...');
     console.log("Updated sponsorMessage:", sponsorMessage);
     console.log("Updated sponsorSignature:", sponsorSignature);
-    console.log("Updated respondent list:", respondents.map(u => u.id));
-    console.log("Updated super user list:", superUsers.map(u => u.id));
+    console.log("Updated respondent list:", respondents);
+    console.log("Updated super user list:", superUsers);
     alert("Changes saved! Check the console for data.");
     setIsEditMode(false); // Switch back to preview mode
   }
 
   const handleCancel = () => {
       // Reset state to original collection data
-      setRespondents(allUsers.filter(u => collection.userIds.includes(u.id)));
-      setSuperUsers(allUsers.filter(u => (collection.superUserIds || []).includes(u.id)))
+      setRespondents(collection.userIds.map((id, index) => ({id, name: `User ${id}`, email: `user${index}@example.com` })));
+      setSuperUsers((collection.superUserIds || []).map((id, index) => ({id, name: `Super User ${id}`, email: `superuser${index}@example.com` })))
       setCohortType(collection.cohortType || '');
       setLogoDataUri(collection.logoDataUri || '');
       setSponsorMessage(collection.sponsorMessage || '');
@@ -451,5 +449,3 @@ export default function EditCollectionPage() {
     </div>
   );
 }
-
-    
