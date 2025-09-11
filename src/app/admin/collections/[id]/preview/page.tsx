@@ -161,7 +161,7 @@ export default function PreviewSurveyPage() {
                          <div key={q.id}>
                             <p className="font-semibold">{index + 1}. {q.text}</p>
                             <div className="text-sm text-muted-foreground pl-4 mt-1">
-                                <p>Type: <Badge variant="secondary">{q.type}</Badge></p>
+                                <div>Type: <Badge variant="secondary">{q.type}</Badge></div>
                                 {q.options && <p>Options: {q.options.join(', ')}</p>}
                             </div>
                         </div>
