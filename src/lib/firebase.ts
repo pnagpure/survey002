@@ -20,13 +20,8 @@ const auth = getAuth(app);
 
 // Connect to emulators in development
 if (process.env.NODE_ENV === 'development') {
-  try {
-    connectFirestoreEmulator(db, 'localhost', 8080);
-    connectAuthEmulator(auth, 'http://localhost:9099');
-    console.log("Firestore and Auth emulators connected");
-  } catch (e) {
-      console.error("Error connecting to Firebase emulators", e);
-  }
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectAuthEmulator(auth, 'http://localhost:9099');
 }
 
 export { db, auth };
