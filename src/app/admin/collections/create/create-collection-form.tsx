@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
-import { UserPlus, X, ShieldCheck, Building2, MessageSquare, Pencil } from 'lucide-react';
+import { UserPlus, X, ShieldCheck, Building2, MessageSquare, Pencil, ArrowLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,7 @@ import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { createCollection } from '@/lib/actions';
 import type { Survey } from '@/lib/types';
+import Link from 'next/link';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -170,199 +171,217 @@ export function CreateCollectionForm({ surveys }: { surveys: Survey[] }) {
   };
 
   return (
-    <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Collection Name</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Q3 Product Feedback Group"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Select Survey</label>
-              <Select onValueChange={setSurveyId} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a survey" />
-                </SelectTrigger>
-                <SelectContent>
-                  {surveys.map((survey) => (
-                    <SelectItem key={survey.id} value={survey.id}>
-                      {survey.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium flex items-center gap-2"><Building2 /> Branding & Welcome Page</h3>
-                 <p className="text-sm text-muted-foreground">
-                    Customize the welcome page for this survey collection.
+    <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <div className="mb-8 flex items-center justify-between">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Create Survey Collection</h1>
+                <p className="text-muted-foreground">
+                Group users and schedule a survey for them.
                 </p>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label>Cohort Type</Label>
-                        <Select onValueChange={(value) => setCohortType(value as any)} value={cohortType}>
-                            <SelectTrigger>
-                            <SelectValue placeholder="Select cohort type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="organisation">Organisation</SelectItem>
-                                <SelectItem value="university">University</SelectItem>
-                                <SelectItem value="government">Government</SelectItem>
-                                <SelectItem value="general">General Public</SelectItem>
-                            </SelectContent>
-                        </Select>
+            </div>
+            <Button asChild variant="outline">
+                <Link href="/admin">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Admin
+                </Link>
+            </Button>
+        </div>
+        <Card>
+            <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                <label className="block text-sm font-medium">Collection Name</label>
+                <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Q3 Product Feedback Group"
+                    required
+                />
+                </div>
+                <div className="space-y-2">
+                <label className="block text-sm font-medium">Select Survey</label>
+                <Select onValueChange={setSurveyId} required>
+                    <SelectTrigger>
+                    <SelectValue placeholder="Choose a survey" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {surveys.map((survey) => (
+                        <SelectItem key={survey.id} value={survey.id}>
+                        {survey.title}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                </div>
+
+                <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2"><Building2 /> Branding & Welcome Page</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Customize the welcome page for this survey collection.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label>Cohort Type</Label>
+                            <Select onValueChange={(value) => setCohortType(value as any)} value={cohortType}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select cohort type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="organisation">Organisation</SelectItem>
+                                    <SelectItem value="university">University</SelectItem>
+                                    <SelectItem value="government">Government</SelectItem>
+                                    <SelectItem value="general">General Public</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Sponsor Logo</Label>
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoUpload}
+                                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                            />
+                            {logoDataUri && <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="mt-2 rounded-lg object-contain" />}
+                        </div>
                     </div>
-                     <div className="space-y-2">
-                        <Label>Sponsor Logo</Label>
-                         <Input
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Sponsor Message</Label>
+                        <Textarea 
+                            value={sponsorMessage}
+                            onChange={(e) => setSponsorMessage(e.target.value)}
+                            placeholder="e.g., Your feedback is invaluable to us..."
+                            rows={4}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Sponsor Signature</Label>
+                        <Input 
+                            value={sponsorSignature}
+                            onChange={(e) => setSponsorSignature(e.target.value)}
+                            placeholder="e.g., John Doe, CEO of ExampleCorp"
+                        />
+                    </div>
+                </div>
+                
+                <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="text-lg font-medium">Manage Respondents</h3>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Add Respondent Manually</label>
+                        <div className="flex items-center gap-2">
+                        <Input
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            placeholder="Respondent Name"
+                        />
+                        <Input
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            placeholder="respondent@example.com"
+                            type="email"
+                        />
+                        <Button type="button" onClick={handleAddRespondent} variant="secondary">
+                            <UserPlus />
+                        </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Or Upload Respondents from Excel</label>
+                        <div className="flex items-center gap-2">
+                        <Input
                             type="file"
-                            accept="image/*"
-                            onChange={handleLogoUpload}
+                            accept=".xlsx, .xls"
+                            onChange={handleFileUpload}
                             className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                         />
-                        {logoDataUri && <Image src={logoDataUri} alt="Logo preview" width={80} height={80} className="mt-2 rounded-lg object-contain" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
                     </div>
-                 </div>
-                 <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Sponsor Message</Label>
-                    <Textarea 
-                        value={sponsorMessage}
-                        onChange={(e) => setSponsorMessage(e.target.value)}
-                        placeholder="e.g., Your feedback is invaluable to us..."
-                        rows={4}
-                    />
-                 </div>
-                 <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Sponsor Signature</Label>
-                    <Input 
-                        value={sponsorSignature}
-                        onChange={(e) => setSponsorSignature(e.target.value)}
-                        placeholder="e.g., John Doe, CEO of ExampleCorp"
-                    />
-                 </div>
-            </div>
-            
-            <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium">Manage Respondents</h3>
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Add Respondent Manually</label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        placeholder="Respondent Name"
-                      />
-                      <Input
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        placeholder="respondent@example.com"
-                        type="email"
-                      />
-                      <Button type="button" onClick={handleAddRespondent} variant="secondary">
-                        <UserPlus />
-                      </Button>
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Or Upload Respondents from Excel</label>
-                    <div className="flex items-center gap-2">
-                       <Input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={handleFileUpload}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">File must contain 'Name' and 'Email' columns.</p>
-                </div>
-                
-                 <div>
-                    <h4 className="text-sm font-medium mb-2">Added Respondents ({users.length})</h4>
-                    <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
-                        {users.length === 0 ? (
-                        <p className="text-sm text-center text-muted-foreground py-4">No respondents added yet.</p>
-                        ) : (
-                        users.map((user) => (
-                          <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
-                            <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                    
+                    <div>
+                        <h4 className="text-sm font-medium mb-2">Added Respondents ({users.length})</h4>
+                        <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
+                            {users.length === 0 ? (
+                            <p className="text-sm text-center text-muted-foreground py-4">No respondents added yet.</p>
+                            ) : (
+                            users.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </div>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveRespondent(user.id)}>
+                                    <X className="h-4 w-4 text-destructive"/>
+                                </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveRespondent(user.id)}>
-                                <X className="h-4 w-4 text-destructive"/>
-                            </Button>
-                          </div>
-                        ))
-                        )}
-                    </div>
-                </div>
-            </div>
-            
-            <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="text-lg font-medium flex items-center gap-2"><ShieldCheck /> Manage Super Users</h3>
-                 <p className="text-sm text-muted-foreground">
-                    Super users can view results and perform analytics for this collection.
-                </p>
-                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Add Super User Manually</label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={newSuperUserName}
-                        onChange={(e) => setNewSuperUserName(e.target.value)}
-                        placeholder="Super User Name"
-                      />
-                      <Input
-                        value={newSuperUserEmail}
-                        onChange={(e) => setNewSuperUserEmail(e.target.value)}
-                        placeholder="superuser@example.com"
-                        type="email"
-                      />
-                      <Button type="button" onClick={handleAddSuperUser} variant="secondary">
-                        <UserPlus />
-                      </Button>
+                            ))
+                            )}
+                        </div>
                     </div>
                 </div>
                 
-                 <div>
-                    <h4 className="text-sm font-medium mb-2">Added Super Users ({superUsers.length})</h4>
-                    <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
-                        {superUsers.length === 0 ? (
-                        <p className="text-sm text-center text-muted-foreground py-4">No super users added yet.</p>
-                        ) : (
-                        superUsers.map((user) => (
-                          <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
-                            <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
+                <div className="space-y-4 rounded-lg border p-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2"><ShieldCheck /> Manage Super Users</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Super users can view results and perform analytics for this collection.
+                    </p>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Add Super User Manually</label>
+                        <div className="flex items-center gap-2">
+                        <Input
+                            value={newSuperUserName}
+                            onChange={(e) => setNewSuperUserName(e.target.value)}
+                            placeholder="Super User Name"
+                        />
+                        <Input
+                            value={newSuperUserEmail}
+                            onChange={(e) => setNewSuperUserEmail(e.target.value)}
+                            placeholder="superuser@example.com"
+                            type="email"
+                        />
+                        <Button type="button" onClick={handleAddSuperUser} variant="secondary">
+                            <UserPlus />
+                        </Button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 className="text-sm font-medium mb-2">Added Super Users ({superUsers.length})</h4>
+                        <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/50 p-2 space-y-2">
+                            {superUsers.length === 0 ? (
+                            <p className="text-sm text-center text-muted-foreground py-4">No super users added yet.</p>
+                            ) : (
+                            superUsers.map((user) => (
+                            <div key={user.id} className="flex items-center justify-between p-2 bg-background rounded-md shadow-sm">
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                                </div>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSuperUser(user.id)}>
+                                    <X className="h-4 w-4 text-destructive"/>
+                                </Button>
                             </div>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSuperUser(user.id)}>
-                                <X className="h-4 w-4 text-destructive"/>
-                            </Button>
-                          </div>
-                        ))
-                        )}
+                            ))
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Schedule Date</label>
-              <Input
-                type="date"
-                value={schedule}
-                onChange={(e) => setSchedule(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" size="lg">Create Collection</Button>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="space-y-2">
+                <label className="block text-sm font-medium">Schedule Date</label>
+                <Input
+                    type="date"
+                    value={schedule}
+                    onChange={(e) => setSchedule(e.target.value)}
+                    required
+                />
+                </div>
+                <Button type="submit" size="lg">Create Collection</Button>
+            </form>
+            </CardContent>
+        </Card>
+    </div>
   )
 }
+
+    
