@@ -98,12 +98,12 @@ export default function CreateSurveyPage() {
               id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
               type: row.type,
               text: row.text,
-              options: typeof row.options === 'string' ? row.options.split(',').map(o => o.trim()) : undefined,
+              options: typeof row.options === 'string' ? row.options.split(';').map(o => o.trim()) : undefined,
               min: row.min,
               max: row.max,
               multiple: String(row.multiple).toLowerCase() === 'true',
-              rows: typeof row.rows === 'string' ? row.rows.split(',').map(o => o.trim()) : undefined,
-              columns: typeof row.columns === 'string' ? row.columns.split(',').map(o => o.trim()) : undefined,
+              rows: typeof row.rows === 'string' ? row.rows.split(';').map(o => o.trim()) : undefined,
+              columns: typeof row.columns === 'string' ? row.columns.split(';').map(o => o.trim()) : undefined,
               accept: row.accept,
             };
             return question;
@@ -136,7 +136,7 @@ export default function CreateSurveyPage() {
       },
       { 
         type: 'multiple-choice', text: 'Which of these colors do you like?', 
-        options: 'Red, Green, Blue', min: '', max: '', multiple: 'true', rows: '', columns: '', accept: '' 
+        options: 'Red; Green; Blue', min: '', max: '', multiple: 'true', rows: '', columns: '', accept: '' 
       },
        { 
         type: 'rating', text: 'Rate our service from 1 to 5.', 
@@ -144,7 +144,7 @@ export default function CreateSurveyPage() {
       },
        { 
         type: 'ranking', text: 'Rank these fruits.', 
-        options: 'Apple, Banana, Orange', min: '', max: '', multiple: 'false', rows: '', columns: '', accept: '' 
+        options: 'Apple; Banana; Orange', min: '', max: '', multiple: 'false', rows: '', columns: '', accept: '' 
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(templateData);
