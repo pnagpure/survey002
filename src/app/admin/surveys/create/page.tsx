@@ -99,7 +99,7 @@ export default function CreateSurveyPage() {
               options: typeof row.options === 'string' ? row.options.split(',').map(o => o.trim()) : undefined,
               min: row.min,
               max: row.max,
-              multiple: row.multiple === true || row.multiple === 'true',
+              multiple: String(row.multiple).toLowerCase() === 'true',
               rows: typeof row.rows === 'string' ? row.rows.split(',').map(o => o.trim()) : undefined,
               columns: typeof row.columns === 'string' ? row.columns.split(',').map(o => o.trim()) : undefined,
               accept: row.accept,
@@ -123,19 +123,19 @@ export default function CreateSurveyPage() {
     const templateData = [
       { 
         type: 'text', text: 'What is your primary hobby?', 
-        options: '', min: '', max: '', multiple: '', rows: '', columns: '', accept: '' 
+        options: '', min: '', max: '', multiple: false, rows: '', columns: '', accept: '' 
       },
       { 
         type: 'multiple-choice', text: 'Which of these colors do you like?', 
-        options: 'Red, Green, Blue', min: '', max: '', multiple: 'true', rows: '', columns: '', accept: '' 
+        options: 'Red, Green, Blue', min: '', max: '', multiple: true, rows: '', columns: '', accept: '' 
       },
        { 
         type: 'rating', text: 'Rate our service from 1 to 5.', 
-        options: '', min: 1, max: 5, multiple: '', rows: '', columns: '', accept: '' 
+        options: '', min: 1, max: 5, multiple: false, rows: '', columns: '', accept: '' 
       },
        { 
         type: 'ranking', text: 'Rank these fruits.', 
-        options: 'Apple, Banana, Orange', min: '', max: '', multiple: '', rows: '', columns: '', accept: '' 
+        options: 'Apple, Banana, Orange', min: '', max: '', multiple: false, rows: '', columns: '', accept: '' 
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(templateData);
