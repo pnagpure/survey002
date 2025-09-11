@@ -89,21 +89,39 @@ export const db = {
     'resp5': { surveyId: 'workplace-satisfaction-q2', userId: 'user-2', submittedAt: '2024-04-20T10:00:00Z', answers: { 'q1-work-life-balance': 4, 'q2-improvement-suggestions': 'More flexible work hours would be appreciated.', 'q3-communication': 'Somewhat effective' } },
     'resp6': { surveyId: 'workplace-satisfaction-q2', userId: 'user-3', submittedAt: '2024-04-20T11:30:00Z', answers: { 'q1-work-life-balance': 5, 'q2-improvement-suggestions': 'Clearer career progression paths.', 'q3-communication': 'Very effective' } },
     'resp7': { surveyId: 'workplace-satisfaction-q2', userId: 'user-1', submittedAt: '2024-04-21T09:15:00Z', answers: { 'q1-work-life-balance': 2, 'q2-improvement-suggestions': 'Fewer meetings, more focus time.', 'q3-communication': 'Not effective' } },
-    ...Array.from({ length: 10 }, (_, i) => ({
+     // Edge case response for testing robustness
+    'resp8-edge-case': {
+        surveyId: 'comprehensive-template',
+        userId: 'user-1',
+        submittedAt: '2024-09-10T12:00:00Z',
+        answers: {
+            'q-text': '', // Empty text
+            'q-number': 'invalid-number', // Invalid number to be filtered
+            'q-rating': 99, // Out of range rating
+            'q-date': 'not a date',
+        },
+    },
+    // Generate 50 realistic, randomized responses for the comprehensive template
+    ...Array.from({ length: 50 }, (_, i) => ({
         [`c-resp${i + 1}`]: {
             surveyId: 'comprehensive-template',
             userId: `user-${(i % 4) + 1}`,
-            submittedAt: new Date(Date.now() - (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
+            submittedAt: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000).toISOString(),
             answers: {
-                'q-text': `My goal is to achieve a leadership position within the ${['Engineering', 'Sales', 'Marketing'][i % 3]} department.`,
-                'q-multiple-choice-single': ['Facebook', 'LinkedIn', 'Instagram'][i % 3],
-                'q-multiple-choice-multi': [['Smartphone', 'Laptop'], ['Tablet', 'Smartwatch'], ['Laptop'], ['Smartphone', 'Laptop', 'Tablet']][i % 4],
-                'q-rating': (i % 5) + 1,
-                'q-number': 5 + (i % 6),
-                'q-yesNo': i % 2 === 0 ? 'Yes' : 'No',
-                'q-dropdown': ['Engineering', 'Sales', 'Marketing', 'Human Resources', 'Support'][i % 5],
-                'q-matrix': { Workload: ['Neutral', 'Satisfied', 'Very Satisfied'][i % 3], Compensation: ['Dissatisfied', 'Neutral', 'Satisfied'][i % 3], 'Team Culture': ['Satisfied', 'Very Satisfied', 'Neutral'][i % 3], Management: ['Very Dissatisfied', 'Dissatisfied', 'Neutral'][i % 3] },
-                'q-date': new Date(Date.now() - (i + 1) * 30 * 24 * 60 * 60 * 1000),
+                'q-text': `My goal is to improve in ${['Engineering', 'Sales', 'Marketing'][Math.floor(Math.random() * 3)]}.`,
+                'q-multiple-choice-single': ['Facebook', 'LinkedIn', 'Instagram', 'Twitter', 'TikTok'][Math.floor(Math.random() * 5)],
+                'q-multiple-choice-multi': ['Smartphone', 'Laptop', 'Tablet', 'Smartwatch'].filter(() => Math.random() > 0.5).slice(0, 2),
+                'q-rating': Math.floor(Math.random() * 5) + 1,
+                'q-number': Math.floor(Math.random() * 76),
+                'q-yesNo': Math.random() > 0.5 ? 'Yes' : 'No',
+                'q-dropdown': ['Engineering', 'Sales', 'Marketing', 'Human Resources', 'Support'][Math.floor(Math.random() * 5)],
+                'q-matrix': { 
+                    Workload: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'][Math.floor(Math.random() * 5)], 
+                    Compensation: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'][Math.floor(Math.random() * 5)], 
+                    'Team Culture': ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'][Math.floor(Math.random() * 5)], 
+                    Management: ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied'][Math.floor(Math.random() * 5)] 
+                },
+                'q-date': new Date(Date.now() - Math.floor(Math.random() * 365) * 24 * 60 * 60 * 1000).toISOString(),
                 'q-file': `proposal_v${i + 1}.pdf`,
                 'q-ranking': { 'Health Insurance': (i % 4) + 1, 'Remote Work Options': ((i + 1) % 4) + 1, 'Paid Time Off': ((i + 2) % 4) + 1, 'Retirement Plan': ((i + 3) % 4) + 1 },
             },
