@@ -24,6 +24,7 @@ import { PlusCircle, Trash2, ArrowLeft, Download, Upload } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import * as XLSX from 'xlsx';
 import type { Question } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function CreateSurveyPage() {
@@ -31,6 +32,7 @@ export default function CreateSurveyPage() {
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const router = useRouter();
+  const { toast } = useToast();
 
   const addQuestion = (type: string) => {
     const newQuestion: Question = {
@@ -108,10 +110,17 @@ export default function CreateSurveyPage() {
           }).filter(q => q.type && q.text); // Basic validation
           
           setQuestions(prev => [...prev, ...newQuestions]);
-          alert(`${newQuestions.length} questions imported successfully!`);
+           toast({
+            title: "Import Successful!",
+            description: `${newQuestions.length} questions imported successfully.`,
+          });
         } catch (error) {
           console.error("Error parsing Excel file:", error);
-          alert("Failed to parse the Excel file. Please ensure it's a valid format and matches the template.");
+           toast({
+            variant: "destructive",
+            title: "File Parse Error",
+            description: "Failed to parse the Excel file. Please ensure it's a valid format and matches the template.",
+          });
         }
       };
       reader.readAsBinaryString(file);
@@ -123,19 +132,19 @@ export default function CreateSurveyPage() {
     const templateData = [
       { 
         type: 'text', text: 'What is your primary hobby?', 
-        options: '', min: '', max: '', multiple: false, rows: '', columns: '', accept: '' 
+        options: '', min: '', max: '', multiple: 'false', rows: '', columns: '', accept: '' 
       },
       { 
         type: 'multiple-choice', text: 'Which of these colors do you like?', 
-        options: 'Red, Green, Blue', min: '', max: '', multiple: true, rows: '', columns: '', accept: '' 
+        options: 'Red, Green, Blue', min: '', max: '', multiple: 'true', rows: '', columns: '', accept: '' 
       },
        { 
         type: 'rating', text: 'Rate our service from 1 to 5.', 
-        options: '', min: 1, max: 5, multiple: false, rows: '', columns: '', accept: '' 
+        options: '', min: 1, max: 5, multiple: 'false', rows: '', columns: '', accept: '' 
       },
        { 
         type: 'ranking', text: 'Rank these fruits.', 
-        options: 'Apple, Banana, Orange', min: '', max: '', multiple: false, rows: '', columns: '', accept: '' 
+        options: 'Apple, Banana, Orange', min: '', max: '', multiple: 'false', rows: '', columns: '', accept: '' 
       },
     ];
     const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -147,12 +156,19 @@ export default function CreateSurveyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || questions.length === 0) {
-        alert("Please provide a title and at least one question.");
+        toast({
+            variant: "destructive",
+            title: "Incomplete Survey",
+            description: "Please provide a title and at least one question.",
+        });
         return;
     };
     // In a real app, this would save to a database
     console.log('Survey Created:', JSON.stringify({ title, description, questions }, null, 2));
-    alert('Survey created successfully! Check the console for the data.');
+    toast({
+        title: "Survey Created!",
+        description: "Your new survey has been saved.",
+    });
     router.push('/admin');
   };
 
@@ -297,3 +313,5 @@ export default function CreateSurveyPage() {
     </div>
   );
 }
+
+    

@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 interface LocalUser {
   id: string;
@@ -29,6 +30,7 @@ export default function EditCollectionPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
+  const { toast } = useToast();
   
   const collection = getSurveyCollectionById(id);
   
@@ -123,7 +125,11 @@ export default function EditCollectionPage() {
           setRespondents((prev) => [...prev, ...newUsers]);
         } catch (error) {
           console.error("Error parsing Excel file:", error);
-          alert("Failed to parse the Excel file. Please ensure it's a valid format.");
+          toast({
+            variant: "destructive",
+            title: "File Parse Error",
+            description: "Failed to parse the Excel file. Please ensure it's a valid format.",
+          });
         }
       };
       reader.readAsBinaryString(file);
@@ -141,7 +147,10 @@ export default function EditCollectionPage() {
     console.log("Updated sponsorSignature:", sponsorSignature);
     console.log("Updated respondent list:", respondents);
     console.log("Updated super user list:", superUsers);
-    alert("Changes saved! Check the console for data.");
+    toast({
+        title: "Changes Saved!",
+        description: "The collection has been updated.",
+    });
     setIsEditMode(false); // Switch back to preview mode
   }
 
@@ -159,7 +168,6 @@ export default function EditCollectionPage() {
   const hasUserResponded = (userId: string, surveyId: string) => {
     return allResponses.some(response => response.userId === userId && response.surveyId === surveyId);
   }
-
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8">
@@ -449,3 +457,5 @@ export default function EditCollectionPage() {
     </div>
   );
 }
+
+    

@@ -27,6 +27,7 @@ import * as XLSX from 'xlsx';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -53,6 +54,7 @@ export default function CreateCollectionPage() {
   const [superUsers, setSuperUsers] = useState<User[]>([]);
 
   const router = useRouter();
+  const { toast } = useToast();
 
   // In a real app, surveys would be fetched async
   const surveys = getAllSurveys();
@@ -123,7 +125,11 @@ export default function CreateCollectionPage() {
           setUsers((prev) => [...prev, ...newUsers]);
         } catch (error) {
           console.error("Error parsing Excel file:", error);
-          alert("Failed to parse the Excel file. Please ensure it's a valid format.");
+           toast({
+            variant: "destructive",
+            title: "File Parse Error",
+            description: "Failed to parse the Excel file. Please ensure it's a valid format.",
+          });
         }
       };
       reader.readAsBinaryString(file);
@@ -135,7 +141,11 @@ export default function CreateCollectionPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !surveyId || !schedule || users.length === 0) {
-      alert("Please fill all fields and add at least one respondent.");
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please fill all fields and add at least one respondent.",
+      });
       return;
     };
 
@@ -154,7 +164,10 @@ export default function CreateCollectionPage() {
       superUserIds: superUsers.map(u => u.id),
     });
 
-    alert('Collection created successfully! Check the console for data.');
+    toast({
+      title: "Collection Created!",
+      description: "The new survey collection has been saved.",
+    });
     router.push('/admin');
   };
 
@@ -371,3 +384,5 @@ export default function CreateCollectionPage() {
     </div>
   );
 }
+
+    
