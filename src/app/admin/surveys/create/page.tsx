@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState } from 'react';
@@ -25,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import * as XLSX from 'xlsx';
 import type { Question } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { createSurvey } from '@/lib/actions';
 
 
 export default function CreateSurveyPage() {
@@ -98,12 +100,12 @@ export default function CreateSurveyPage() {
               id: `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
               type: row.type,
               text: row.text,
-              options: typeof row.options === 'string' ? row.options.split(';').map(o => o.trim()) : undefined,
+              options: typeof row.options === 'string' ? row.options.split(';').map((o: string) => o.trim()) : undefined,
               min: row.min,
               max: row.max,
               multiple: String(row.multiple).toLowerCase() === 'true',
-              rows: typeof row.rows === 'string' ? row.rows.split(';').map(o => o.trim()) : undefined,
-              columns: typeof row.columns === 'string' ? row.columns.split(';').map(o => o.trim()) : undefined,
+              rows: typeof row.rows === 'string' ? row.rows.split(';').map((o: string) => o.trim()) : undefined,
+              columns: typeof row.columns === 'string' ? row.columns.split(';').map((o: string) => o.trim()) : undefined,
               accept: row.accept,
             };
             return question;
@@ -163,13 +165,22 @@ export default function CreateSurveyPage() {
         });
         return;
     };
-    // In a real app, this would save to a database
-    console.log('Survey Created:', JSON.stringify({ title, description, questions }, null, 2));
-    toast({
-        title: "Survey Created!",
-        description: "Your new survey has been saved.",
-    });
-    router.push('/admin');
+    
+    const result = await createSurvey({ title, description, questions });
+
+    if(result.success) {
+      toast({
+          title: "Survey Created!",
+          description: "Your new survey has been saved.",
+      });
+      router.push('/admin');
+    } else {
+       toast({
+            variant: "destructive",
+            title: "Creation Failed",
+            description: result.error,
+        });
+    }
   };
 
   return (

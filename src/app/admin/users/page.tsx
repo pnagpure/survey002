@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,10 +9,34 @@ import { Users, ArrowLeft, Trash2 } from "lucide-react";
 import { AddUserDialog } from "./_components/add-user-dialog";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { deleteUser } from "@/lib/actions";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 export default function AdminUsersPage() {
   const users = getAllUsers();
+  const { toast } = useToast();
+
+  const handleDeleteUser = async (userId: string) => {
+    const result = await deleteUser(userId);
+    if(result.success) {
+        toast({ title: 'User Deleted', description: 'The user has been removed from the system.' });
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.error });
+    }
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -55,9 +82,26 @@ export default function AdminUsersPage() {
                       <Badge variant="secondary">Admin</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                        <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                       <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the user
+                                and remove their data from our servers.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                   </TableRow>
                 )
@@ -70,3 +114,5 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
+    

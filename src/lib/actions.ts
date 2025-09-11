@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { z } from 'zod';
@@ -7,7 +8,8 @@ import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
 import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
 import { revalidatePath } from 'next/cache';
 import jStat from 'jstat';
-import type { Question, SurveyResponse } from '@/lib/types';
+import type { Question, Survey, SurveyResponse, SurveyCollection, User } from '@/lib/types';
+import { db } from './db';
 
 
 export interface StatsResult {
@@ -29,15 +31,25 @@ export interface StatsResult {
   error?: string;
 }
 
-export async function submitResponse(surveyId: string, data: unknown) {
-  // In a real app, you would validate the data against the survey's questions
-  // and save it to your database.
-  console.log('New response for survey', surveyId, data);
-  // We'll revalidate the results page to show the new response,
-  // although our mock data isn't actually updated.
-  revalidatePath(`/surveys/${surveyId}/results`);
+export async function submitResponse(surveyId: string, data: Record<string, any>) {
+  try {
+    const responseId = `resp_${Date.now()}`;
+    const newResponse: Omit<SurveyResponse, 'id'> = {
+        surveyId,
+        userId: 'user-anonymous', // In a real app, this would be the logged-in user's ID
+        submittedAt: new Date().toISOString(),
+        answers: data,
+    };
 
-  return { success: true, message: 'Thank you for your response!' };
+    db.responses[responseId] = newResponse;
+    revalidatePath(`/surveys/${surveyId}/results`);
+    revalidatePath('/dashboard');
+    revalidatePath('/admin');
+    return { success: true, message: 'Thank you for your response!' };
+  } catch (error) {
+    console.error("Error submitting response:", error);
+    return { success: false, error: 'Failed to submit response.'}
+  }
 }
 
 const generateReportSchema = z.object({
@@ -224,3 +236,180 @@ export async function runStatisticalTest(data: {
     return { success: false, error: 'Computation failed.' };
   }
 }
+
+export async function createSurvey(data: { title: string, description: string, questions: Question[]}) {
+    try {
+        const { title, description, questions } = data;
+        const surveyId = title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+
+        const newSurvey: Omit<Survey, 'id'> = {
+            title,
+            description,
+            questions,
+            createdAt: new Date().toISOString(),
+        };
+
+        db.surveys[surveyId] = newSurvey;
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error creating survey:", error);
+        return { success: false, error: "Failed to create survey." };
+    }
+}
+
+export async function createCollection(data: {
+    name: string;
+    surveyId: string;
+    schedule: string;
+    cohortType?: 'organisation' | 'university' | 'government' | 'general';
+    logoDataUri?: string;
+    sponsorMessage?: string;
+    sponsorSignature?: string;
+    respondents: {id: string, name: string, email: string}[];
+    superUsers: {id: string, name: string, email: string}[];
+}) {
+    try {
+        const { name, surveyId, schedule, respondents, superUsers, ...rest } = data;
+        
+        // Add users to global user table if they don't exist
+        const respondentIds = respondents.map(u => {
+            if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
+            return u.id;
+        });
+        const superUserIds = superUsers.map(u => {
+             if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
+            return u.id;
+        });
+
+        const collectionId = `coll-${Date.now()}`;
+        const newCollection: Omit<SurveyCollection, 'id'> = {
+            name,
+            surveyId,
+            schedule,
+            userIds: respondentIds,
+            superUserIds: superUserIds,
+            status: new Date(schedule) <= new Date() ? 'active' : 'pending',
+            ...rest,
+        };
+
+        db.surveyCollections[collectionId] = newCollection;
+        revalidatePath('/admin');
+        return { success: true };
+    } catch(error) {
+        console.error("Error creating collection:", error);
+        return { success: false, error: "Failed to create collection." };
+    }
+}
+
+export async function updateCollection(collectionId: string, data: {
+    cohortType?: 'organisation' | 'university' | 'government' | 'general';
+    logoDataUri?: string;
+    sponsorMessage?: string;
+    sponsorSignature?: string;
+    respondents: {id: string, name: string, email: string}[];
+    superUsers: {id: string, name: string, email: string}[];
+}) {
+    try {
+        const collection = db.surveyCollections[collectionId];
+        if (!collection) {
+            return { success: false, error: 'Collection not found.' };
+        }
+
+        const { respondents, superUsers, ...rest } = data;
+        const respondentIds = respondents.map(u => {
+            if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
+            return u.id;
+        });
+        const superUserIds = superUsers.map(u => {
+             if (!db.users[u.id]) { db.users[u.id] = { name: u.name, email: u.email }; }
+            return u.id;
+        });
+
+        const updatedCollection: Omit<SurveyCollection, 'id'> = {
+            ...collection,
+            ...rest,
+            userIds: respondentIds,
+            superUserIds: superUserIds,
+        };
+        
+        db.surveyCollections[collectionId] = updatedCollection;
+        revalidatePath(`/admin/collections/edit/${collectionId}`);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating collection:", error);
+        return { success: false, error: "Failed to update collection." };
+    }
+}
+
+
+export async function updateCollectionContent(collectionId: string, data: { sponsorMessage?: string; sponsorSignature?: string; }) {
+     try {
+        const collection = db.surveyCollections[collectionId];
+        if (!collection) {
+            return { success: false, error: 'Collection not found.' };
+        }
+        collection.sponsorMessage = data.sponsorMessage;
+        collection.sponsorSignature = data.sponsorSignature;
+
+        revalidatePath(`/admin/collections/${collectionId}/preview`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating collection content:", error);
+        return { success: false, error: "Failed to save content." };
+    }
+}
+
+
+export async function sendSurvey(collectionId: string) {
+    try {
+        const collection = db.surveyCollections[collectionId];
+        if (!collection) {
+            return { success: false, error: 'Collection not found.' };
+        }
+        collection.status = 'active';
+        console.log(`Simulating sending survey for collection "${collection.name}"`);
+        console.log(`From: info@qlsystems.in`);
+        console.log(`Recipients: ${collection.userIds.length} users`);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending survey:", error);
+        return { success: false, error: "Failed to send survey." };
+    }
+}
+
+
+export async function addUser(user: { name: string; email: string }) {
+    try {
+        const userId = `user-${Date.now()}`;
+        db.users[userId] = user;
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: 'Failed to add user.' };
+    }
+}
+
+export async function deleteUser(userId: string) {
+    try {
+        if (!db.users[userId]) {
+             return { success: false, error: 'User not found.' };
+        }
+        delete db.users[userId];
+        // Also remove user from collections (optional, good practice)
+        Object.values(db.surveyCollections).forEach(coll => {
+            coll.userIds = coll.userIds.filter(id => id !== userId);
+            coll.superUserIds = coll.superUserIds.filter(id => id !== userId);
+        });
+
+        revalidatePath('/admin/users');
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: 'Failed to delete user.' };
+    }
+}
+
+    

@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { createCollection } from '@/lib/actions';
 
 // In a real app, you would have a more robust User type and import it
 interface User {
@@ -149,26 +150,31 @@ export default function CreateCollectionPage() {
       return;
     };
 
-    // In a real app, this would write to your database (e.g., Firestore)
-    console.log("Creating collection with the following data:");
-    console.log({
-      name,
-      surveyId,
-      schedule,
-      cohortType,
-      logoDataUri,
-      sponsorMessage,
-      sponsorSignature,
-      status: new Date(schedule) <= new Date() ? 'active' : 'pending',
-      userIds: users.map(u => u.id),
-      superUserIds: superUsers.map(u => u.id),
+    const result = await createCollection({
+        name,
+        surveyId,
+        schedule,
+        cohortType: cohortType || undefined,
+        logoDataUri: logoDataUri || undefined,
+        sponsorMessage: sponsorMessage || undefined,
+        sponsorSignature: sponsorSignature || undefined,
+        respondents: users,
+        superUsers: superUsers,
     });
 
-    toast({
-      title: "Collection Created!",
-      description: "The new survey collection has been saved.",
-    });
-    router.push('/admin');
+    if (result.success) {
+        toast({
+            title: "Collection Created!",
+            description: "The new survey collection has been saved.",
+        });
+        router.push('/admin');
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Creation Failed",
+            description: result.error,
+        });
+    }
   };
 
   return (

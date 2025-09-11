@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Building2, Calendar, CheckCircle, Mail, User, Users, UserPlus, X, Send, ShieldCheck, MessageSquare, Pencil, Edit, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import * as XLSX from 'xlsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,6 +19,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import type { User as AppUser } from '@/lib/types';
+import { updateCollection } from '@/lib/actions';
+
 
 interface LocalUser {
   id: string;
@@ -40,14 +43,30 @@ export default function EditCollectionPage() {
 
   const survey = getSurveyById(collection.surveyId);
   const allResponses = getAllResponses();
+  const allUsers = getAllUsers();
 
   // State for edit mode
   const [isEditMode, setIsEditMode] = React.useState(false);
 
   // In a real app, users would be fetched. Here we're creating them on the fly for the edit session.
-  const [respondents, setRespondents] = React.useState<LocalUser[]>(collection.userIds.map((id, index) => ({id, name: `User ${id}`, email: `user${index}@example.com` })));
-  const [superUsers, setSuperUsers] = React.useState<LocalUser[]>((collection.superUserIds || []).map((id, index) => ({id, name: `Super User ${id}`, email: `superuser${index}@example.com` })));
+  const [respondents, setRespondents] = React.useState<LocalUser[]>([]);
+  const [superUsers, setSuperUsers] = React.useState<LocalUser[]>([]);
   
+  useEffect(() => {
+    const initialRespondents = collection.userIds.map(id => {
+        const user = allUsers.find(u => u.id === id);
+        return {id, name: user?.name || `User ${id}`, email: user?.email || `user-${id}@example.com` };
+    });
+    setRespondents(initialRespondents);
+
+    const initialSuperUsers = (collection.superUserIds || []).map(id => {
+        const user = allUsers.find(u => u.id === id);
+        return {id, name: user?.name || `Super User ${id}`, email: `superuser-${id}@example.com` };
+    });
+    setSuperUsers(initialSuperUsers);
+
+  }, [collection.userIds, collection.superUserIds, allUsers]);
+
   const [newRespondentName, setNewRespondentName] = React.useState('');
   const [newRespondentEmail, setNewRespondentEmail] = React.useState('');
   
@@ -138,26 +157,45 @@ export default function EditCollectionPage() {
     }
   };
 
-  const handleSaveChanges = () => {
-     // In a real app, this would write to your database (e.g., Firestore)
-    console.log("Saving changes for collection:", collection.name);
-    console.log("Updated cohortType:", cohortType);
-    console.log("Updated logoDataUri:", logoDataUri.substring(0, 50) + '...');
-    console.log("Updated sponsorMessage:", sponsorMessage);
-    console.log("Updated sponsorSignature:", sponsorSignature);
-    console.log("Updated respondent list:", respondents);
-    console.log("Updated super user list:", superUsers);
-    toast({
-        title: "Changes Saved!",
-        description: "The collection has been updated.",
+  const handleSaveChanges = async () => {
+    const result = await updateCollection(collection.id, {
+        cohortType: cohortType || undefined,
+        logoDataUri: logoDataUri || undefined,
+        sponsorMessage: sponsorMessage || undefined,
+        sponsorSignature: sponsorSignature || undefined,
+        respondents: respondents,
+        superUsers: superUsers,
     });
-    setIsEditMode(false); // Switch back to preview mode
+
+    if (result.success) {
+        toast({
+            title: "Changes Saved!",
+            description: "The collection has been updated.",
+        });
+        setIsEditMode(false); // Switch back to preview mode
+    } else {
+         toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: result.error,
+        });
+    }
   }
 
   const handleCancel = () => {
       // Reset state to original collection data
-      setRespondents(collection.userIds.map((id, index) => ({id, name: `User ${id}`, email: `user${index}@example.com` })));
-      setSuperUsers((collection.superUserIds || []).map((id, index) => ({id, name: `Super User ${id}`, email: `superuser${index}@example.com` })))
+       const initialRespondents = collection.userIds.map(id => {
+            const user = allUsers.find(u => u.id === id);
+            return {id, name: user?.name || `User ${id}`, email: user?.email || `user-${id}@example.com` };
+        });
+        setRespondents(initialRespondents);
+
+        const initialSuperUsers = (collection.superUserIds || []).map(id => {
+            const user = allUsers.find(u => u.id === id);
+            return {id, name: user?.name || `Super User ${id}`, email: `superuser-${id}@example.com` };
+        });
+        setSuperUsers(initialSuperUsers);
+      
       setCohortType(collection.cohortType || '');
       setLogoDataUri(collection.logoDataUri || '');
       setSponsorMessage(collection.sponsorMessage || '');
@@ -312,7 +350,7 @@ export default function EditCollectionPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {collection.status === 'active' && !hasResponded && (
-                                                <Button variant="ghost" size="sm" disabled={!isEditMode}>
+                                                <Button variant="ghost" size="sm" disabled={isEditMode}>
                                                     <Send className="mr-2 h-4 w-4"/>
                                                     Send Reminder
                                                 </Button>

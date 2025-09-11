@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
@@ -16,6 +17,7 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { sendSurvey, updateCollectionContent } from '@/lib/actions';
 
 export default function PreviewSurveyPage() {
   const params = useParams();
@@ -43,14 +45,19 @@ export default function PreviewSurveyPage() {
   const [sponsorMessage, setSponsorMessage] = React.useState(collection.sponsorMessage || '');
   const [sponsorSignature, setSponsorSignature] = React.useState(collection.sponsorSignature || '');
   
-  const handleSaveChanges = () => {
-     // In a real app, this would write to your database (e.g., Firestore)
-    console.log("Saving changes for collection email content:", collection.name);
-    console.log("Updated sponsorMessage:", sponsorMessage);
-    console.log("Updated sponsorSignature:", sponsorSignature);
-    toast({ title: "Changes saved!", description: "The email content has been updated." });
-    setIsEditMode(false);
-    setIsSaved(true);
+  const handleSaveChanges = async () => {
+    const result = await updateCollectionContent(collection.id, {
+        sponsorMessage,
+        sponsorSignature,
+    });
+
+    if (result.success) {
+        toast({ title: "Changes saved!", description: "The email content has been updated." });
+        setIsEditMode(false);
+        setIsSaved(true);
+    } else {
+        toast({ variant: "destructive", title: "Save Failed", description: result.error });
+    }
   }
 
   const handleCancel = () => {
@@ -58,20 +65,25 @@ export default function PreviewSurveyPage() {
       setSponsorMessage(collection.sponsorMessage || '');
       setSponsorSignature(collection.sponsorSignature || '');
       setIsEditMode(false);
+      setIsSaved(true); // Since we reverted, it's "saved"
   }
 
-  const handleSendSurvey = () => {
-      // In a real app, this would trigger a backend service to send emails
-      console.log(`Simulating sending survey for collection "${collection.name}"`);
-      console.log(`From: info@qlsystems.in`);
-      console.log(`Recipients: ${collection.userIds.length} users`);
-      toast({
-          title: "Survey Sent!",
-          description: `The survey has been dispatched to ${collection.userIds.length} recipients.`,
-      });
-      // Optionally, update collection status to 'active' and redirect
-      // For now, we'll just show a toast.
-      router.push('/admin');
+  const handleSendSurvey = async () => {
+      const result = await sendSurvey(collection.id);
+      
+      if (result.success) {
+        toast({
+            title: "Survey Sent!",
+            description: `The survey has been dispatched to ${collection.userIds.length} recipients.`,
+        });
+        router.push('/admin');
+      } else {
+        toast({
+            variant: "destructive",
+            title: "Send Failed",
+            description: result.error,
+        });
+      }
   }
   
   const handleInputChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -182,3 +194,5 @@ export default function PreviewSurveyPage() {
     </div>
   );
 }
+
+    
