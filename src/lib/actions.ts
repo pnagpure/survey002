@@ -237,23 +237,22 @@ export async function runStatisticalTest(data: {
   }
 }
 
-export async function createSurvey(data: { title: string, description: string, questions: Question[]}) {
-    try {
-        const { title, description, questions } = data;
-        const newSurvey = {
-            title,
-            description,
-            questions,
-            createdAt: new Date().toISOString(),
-        };
-
-        await addDoc(collection(db, 'surveys'), newSurvey);
-        revalidatePath('/admin');
-        return { success: true };
-    } catch (error) {
-        console.error("Error creating survey:", error);
-        return { success: false, error: "Failed to create survey." };
-    }
+export async function createSurvey(data: { title: string, description: string, questions: Question[] }) {
+  try {
+    const { title, description, questions } = data;
+    const surveyRef = doc(collection(db, 'surveys'));
+    await setDoc(surveyRef, {
+      title,
+      description,
+      questions,
+      createdAt: new Date().toISOString(),
+    });
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating survey:", error);
+    return { success: false, error: "Failed to create survey." };
+  }
 }
 
 async function findOrCreateUser(user: { name: string, email: string }): Promise<string> {
