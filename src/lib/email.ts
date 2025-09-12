@@ -60,6 +60,7 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
                     },
                 },
             ],
+            isDeliveryReceiptRequested: true,
         }
     };
 
@@ -74,7 +75,7 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
         });
 
         if (response.status === 202) {
-            console.log(`Successfully sent email to ${to}`);
+            console.log(`Successfully queued email to ${to} for sending.`);
             return { success: true };
         } else {
             const errorBody = await response.json();
