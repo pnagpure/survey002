@@ -60,8 +60,7 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
                     },
                 },
             ],
-        },
-        saveToSentItems: true,
+        }
     };
 
     try {
