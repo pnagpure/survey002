@@ -360,11 +360,10 @@ export async function updateCollectionContent(collectionId: string, data: { spon
 export async function sendSurvey(collectionId: string) {
     try {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
-        await updateDoc(collectionRef, { status: 'active' });
-
+        
         const [collection, survey, allUsers] = await Promise.all([
             getSurveyCollectionById(collectionId),
-            getSurveyById(collection?.surveyId || ''),
+            getSurveyById((await getSurveyCollectionById(collectionId))?.surveyId || ''),
             getAllUsers()
         ]);
         
@@ -374,12 +373,14 @@ export async function sendSurvey(collectionId: string) {
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
 
-        // Send to respondents
+        const emailPromises = [];
+
+        // Prepare respondent emails
         for (const userId of collection.userIds) {
             const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
                 const surveyLink = `${appUrl}/surveys/${collection.surveyId}/take`;
-                await sendEmail({
+                emailPromises.push(sendEmail({
                     to: user.email,
                     subject: `You're Invited to Take the "${survey.title}" Survey`,
                     htmlBody: `
@@ -391,16 +392,16 @@ export async function sendSurvey(collectionId: string) {
                         <p>Thank you for your participation!</p>
                         <p><em>${collection.sponsorSignature || 'The SurveySwift Team'}</em></p>
                     `
-                });
+                }));
             }
         }
 
-        // Send to super-users
+        // Prepare super-user emails
         for (const userId of collection.superUserIds) {
             const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
                 const resultsLink = `${appUrl}/admin/collections/edit/${collection.id}`;
-                 await sendEmail({
+                 emailPromises.push(sendEmail({
                     to: user.email,
                     subject: `Survey "${survey.title}" is now active`,
                     htmlBody: `
@@ -409,10 +410,22 @@ export async function sendSurvey(collectionId: string) {
                         <p>You can monitor the results and manage the collection using the link below:</p>
                         <a href="${resultsLink}" style="background-color: #8A2BE2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Collection & Results</a>
                     `
-                });
+                }));
             }
         }
 
+        // Send all emails concurrently
+        const emailResults = await Promise.all(emailPromises);
+
+        const failures = emailResults.filter(res => !res.success);
+        if (failures.length > 0) {
+            const firstError = failures[0].error || 'An unknown error occurred during email dispatch.';
+            // Still update status but return the error
+            await updateDoc(collectionRef, { status: 'active' });
+            return { success: false, error: `Failed to send ${failures.length} emails. First error: ${firstError}` };
+        }
+
+        await updateDoc(collectionRef, { status: 'active' });
         revalidatePath('/admin');
         return { success: true };
     } catch (error) {
