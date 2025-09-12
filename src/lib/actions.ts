@@ -256,12 +256,18 @@ export async function createSurvey(data: { title: string, description: string, q
 }
 
 async function findOrCreateUser(user: { name: string, email: string }): Promise<string> {
-    // This is a simplified version. In a real app, you'd query to see if the user exists.
-    // For this example, we'll just add them and assume they are new if not found by a simple ID guess.
-    // A robust solution would query by email.
-    const userRef = doc(collection(db, 'users'));
-    await setDoc(userRef, user);
-    return userRef.id;
+    try {
+        // This is a simplified version. In a real app, you'd query to see if the user exists.
+        // For this example, we'll just add them and assume they are new if not found by a simple ID guess.
+        // A robust solution would query by email.
+        const userRef = doc(collection(db, 'users'));
+        await setDoc(userRef, user);
+        return userRef.id;
+    } catch(error) {
+        console.error("Error finding or creating user:", error);
+        // Re-throw the error to be caught by the calling function
+        throw new Error("Failed to process user data.");
+    }
 }
 
 
