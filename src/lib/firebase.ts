@@ -2,7 +2,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getAuth, connectAuthEmulator } from 'firebase/auth'; // If using Auth
-// Import other Firebase services as needed (e.g., getFunctions, connectFunctionsEmulator)
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,7 +12,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase app
+// Initialize Firebase app (singleton)
 let app: FirebaseApp;
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
@@ -23,33 +22,46 @@ if (getApps().length === 0) {
 
 // Lazy-initialized instances
 let db: ReturnType<typeof getFirestore>;
-let auth: ReturnType<typeof getAuth>; // If using
+let auth: ReturnType<typeof getAuth>;
 
 const EMULATORS_STARTED = 'EMULATORS_STARTED';
 
-function connectEmulators() {
-  if (global[EMULATORS_STARTED]) {
-    return; // Prevent re-connection during HMR
+function connectToEmulators() {
+  // Prevent re-connection during HMR
+  if ((global as any)[EMULATORS_STARTED]) {
+    return;
   }
 
-  // This function can be called multiple times in dev, so we guard it
-  try {
-    if (process.env.NODE_ENV === 'development') {
-      connectFirestoreEmulator(getFirestore(app), 'localhost', 8080);
-      connectAuthEmulator(getAuth(app), 'http://localhost:9099');
-      console.log("Connected to local Firebase emulators.");
-      (global as any)[EMULATORS_STARTED] = true;
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      // Check if the emulators are running by checking the env vars.
+      if (process.env.FIRESTORE_EMULATOR_HOST || process.env.NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST) {
+        console.log("Connecting to local Firebase emulators.");
+        
+        // Get the instances first
+        const firestoreInstance = getFirestore(app);
+        const authInstance = getAuth(app);
+        
+        // The SDK automatically detects the env vars on the server side.
+        // We only need to explicitly connect on the client side.
+        if (typeof window !== 'undefined') {
+            connectFirestoreEmulator(firestoreInstance, 'localhost', 8080);
+            connectAuthEmulator(authInstance, 'http://localhost:9099');
+        }
+
+        (global as any)[EMULATORS_STARTED] = true;
+      } else {
+        console.log("Firebase emulators not running or env vars not set. Skipping connection.");
+      }
+    } catch (e) {
+      console.error("Error connecting to Firebase emulators:", e);
     }
-  } catch(e) {
-    // Emulator may not be running
-    console.log("Could not connect to emulators, likely in production mode or emulators not running.");
   }
 }
 
-connectEmulators();
+connectToEmulators();
 
 db = getFirestore(app);
 auth = getAuth(app);
-
 
 export { db, auth };
