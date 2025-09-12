@@ -36,12 +36,12 @@ interface EmailPayload {
 export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promise<{ success: boolean, error?: string }> {
     const accessToken = await getGraphToken();
     if (!accessToken) {
-        return { success: false, error: 'Could not authenticate with email service.' };
+        return { success: false, error: 'Could not authenticate with email service. Check your MSAL configuration in the .env file.' };
     }
 
     const senderEmail = process.env.MICROSOFT_GRAPH_USER_ID;
     if (!senderEmail) {
-        return { success: false, error: 'Sender email address is not configured.' };
+        return { success: false, error: 'Sender email address (MICROSOFT_GRAPH_USER_ID) is not configured in the .env file.' };
     }
 
     const endpoint = `https://graph.microsoft.com/v1.0/users/${senderEmail}/sendMail`;
@@ -79,8 +79,10 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
             return { success: true };
         } else {
             const errorBody = await response.json();
+            const errorMessage = errorBody?.error?.message || `API responded with status ${response.status}.`;
+            const errorCode = errorBody?.error?.code || 'Unknown';
             console.error('Failed to send email:', JSON.stringify(errorBody, null, 2));
-            return { success: false, error: `Microsoft Graph API responded with status ${response.status}.` };
+            return { success: false, error: `[${errorCode}] ${errorMessage}` };
         }
     } catch (error) {
         console.error("Error sending email via MS Graph:", error);
