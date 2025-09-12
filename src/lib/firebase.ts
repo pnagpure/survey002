@@ -18,10 +18,15 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Connect to emulators in development
-if (process.env.NODE_ENV === 'development') {
+// Always try to connect to emulators in development.
+// In production, these calls will fail gracefully and connect to the live services.
+try {
   connectFirestoreEmulator(db, 'localhost', 8080);
   connectAuthEmulator(auth, 'http://localhost:9099');
+  console.log("Connected to local Firebase emulators.");
+} catch (e) {
+  console.log("Could not connect to emulators, likely in production mode.");
 }
+
 
 export { db, auth };
