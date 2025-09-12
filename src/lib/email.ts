@@ -1,7 +1,6 @@
 
 'use server';
 
-import 'isomorphic-fetch';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 
 const msalConfig = {
@@ -33,7 +32,23 @@ interface EmailPayload {
     htmlBody: string;
 }
 
+// Optional: Input validation (expand as needed)
+function validatePayload({ to, subject, htmlBody }: EmailPayload): { valid: boolean; error?: string } {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) return { valid: false, error: 'Invalid recipient email address.' };
+    if (!subject || subject.length > 1000) return { valid: false, error: 'Subject is required and must be under 1000 chars.' };
+    if (!htmlBody || htmlBody.length > 1000000) return { valid: false, error: 'HTML body is required and must be under 1MB.' };
+    return { valid: true };
+}
+
+
 export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promise<{ success: boolean, error?: string }> {
+    // Validate inputs
+    const validation = validatePayload({ to, subject, htmlBody });
+    if (!validation.valid) {
+        return { success: false, error: validation.error };
+    }
+
     const accessToken = await getGraphToken();
     if (!accessToken) {
         return { success: false, error: 'Could not authenticate with email service. Check your MSAL configuration in the .env file.' };
@@ -61,7 +76,8 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
                 },
             ],
             isDeliveryReceiptRequested: true,
-        }
+        },
+        saveToSentItems: true, // Explicitly set for clarity (default is true)
     };
 
     try {
