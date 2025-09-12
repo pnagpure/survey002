@@ -1,7 +1,8 @@
-
-import { initializeApp } from 'firebase/app';
+// src/lib/firebase.ts
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, connectAuthEmulator } from 'firebase/auth'; // If using Auth
+// Import other Firebase services as needed (e.g., getFunctions, connectFunctionsEmulator)
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,21 +13,43 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-
-// Initialize services
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Always try to connect to emulators in development.
-// In production, these calls will fail gracefully and connect to the live services.
-try {
-  connectFirestoreEmulator(db, 'localhost', 8080);
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  console.log("Connected to local Firebase emulators.");
-} catch (e) {
-  console.log("Could not connect to emulators, likely in production mode.");
+// Initialize Firebase app
+let app: FirebaseApp;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
 }
+
+// Lazy-initialized instances
+let db: ReturnType<typeof getFirestore>;
+let auth: ReturnType<typeof getAuth>; // If using
+
+const EMULATORS_STARTED = 'EMULATORS_STARTED';
+
+function connectEmulators() {
+  if (global[EMULATORS_STARTED]) {
+    return; // Prevent re-connection during HMR
+  }
+
+  // This function can be called multiple times in dev, so we guard it
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      connectFirestoreEmulator(getFirestore(app), 'localhost', 8080);
+      connectAuthEmulator(getAuth(app), 'http://localhost:9099');
+      console.log("Connected to local Firebase emulators.");
+      (global as any)[EMULATORS_STARTED] = true;
+    }
+  } catch(e) {
+    // Emulator may not be running
+    console.log("Could not connect to emulators, likely in production mode or emulators not running.");
+  }
+}
+
+connectEmulators();
+
+db = getFirestore(app);
+auth = getAuth(app);
 
 
 export { db, auth };
