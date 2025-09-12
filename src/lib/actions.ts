@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import { getResponsesBySurveyId, getSurveyById, getAllUsers } from './data';
+import { getResponsesBySurveyId, getSurveyById, getAllUsers, getSurveyCollectionById, getUserById } from './data';
 import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
 import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
 import { revalidatePath } from 'next/cache';
@@ -10,6 +10,7 @@ import jStat from 'jstat';
 import type { Question, Survey, SurveyResponse, SurveyCollection, User } from '@/lib/types';
 import { db } from './firebase';
 import { collection, addDoc, setDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { sendEmail } from './email';
 
 
 export interface StatsResult {
@@ -360,13 +361,63 @@ export async function sendSurvey(collectionId: string) {
     try {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
         await updateDoc(collectionRef, { status: 'active' });
+
+        const [collection, survey, allUsers] = await Promise.all([
+            getSurveyCollectionById(collectionId),
+            getSurveyById(collection?.surveyId || ''),
+            getAllUsers()
+        ]);
         
-        console.log(`Survey for collection ID "${collectionId}" has been activated.`);
+        if (!collection || !survey) {
+            throw new Error("Collection or Survey not found.");
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
+
+        // Send to respondents
+        for (const userId of collection.userIds) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user?.email) {
+                const surveyLink = `${appUrl}/surveys/${collection.surveyId}/take`;
+                await sendEmail({
+                    to: user.email,
+                    subject: `You're Invited to Take the "${survey.title}" Survey`,
+                    htmlBody: `
+                        <h1>Hello ${user.name},</h1>
+                        <p>You have been invited to participate in the <strong>${survey.title}</strong> survey.</p>
+                        <p>${collection.sponsorMessage || ''}</p>
+                        <a href="${surveyLink}" style="background-color: #1E90FF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Take the Survey</a>
+                        <br><br>
+                        <p>Thank you for your participation!</p>
+                        <p><em>${collection.sponsorSignature || 'The SurveySwift Team'}</em></p>
+                    `
+                });
+            }
+        }
+
+        // Send to super-users
+        for (const userId of collection.superUserIds) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user?.email) {
+                const resultsLink = `${appUrl}/admin/collections/edit/${collection.id}`;
+                 await sendEmail({
+                    to: user.email,
+                    subject: `Survey "${survey.title}" is now active`,
+                    htmlBody: `
+                        <h1>Hello ${user.name},</h1>
+                        <p>The survey <strong>${survey.title}</strong> associated with the collection <strong>${collection.name}</strong> is now active.</p>
+                        <p>You can monitor the results and manage the collection using the link below:</p>
+                        <a href="${resultsLink}" style="background-color: #8A2BE2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Collection & Results</a>
+                    `
+                });
+            }
+        }
+
         revalidatePath('/admin');
         return { success: true };
     } catch (error) {
         console.error("Error sending survey:", error);
-        return { success: false, error: "Failed to send survey." };
+        return { success: false, error: "Failed to send survey and notify users." };
     }
 }
 
@@ -395,5 +446,7 @@ export async function deleteUser(userId: string) {
         return { success: false, error: 'Failed to delete user.' };
     }
 }
+
+    
 
     
