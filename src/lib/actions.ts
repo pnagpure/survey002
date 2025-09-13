@@ -362,7 +362,7 @@ export async function sendSurvey(collectionId: string) {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
         
         const [collectionData, allUsers] = await Promise.all([
-            getSurveyCollectionById(collectionId),
+            await getSurveyCollectionById(collectionId),
             getAllUsers()
         ]);
         
