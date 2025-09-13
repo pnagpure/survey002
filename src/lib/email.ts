@@ -77,7 +77,7 @@ export async function sendEmail({ to, subject, htmlBody }: EmailPayload): Promis
             ],
             isDeliveryReceiptRequested: true,
         },
-        saveToSentItems: true, // Explicitly set for clarity (default is true)
+        saveToSentItems: true,
     };
 
     try {
