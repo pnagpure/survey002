@@ -361,10 +361,7 @@ export async function sendSurvey(collectionId: string) {
     try {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
         
-        const [collectionData, allUsers] = await Promise.all([
-            await getSurveyCollectionById(collectionId),
-            getAllUsers()
-        ]);
+        const collectionData = await getSurveyCollectionById(collectionId);
         
         if (!collectionData) {
             throw new Error("Collection not found.");
@@ -381,7 +378,7 @@ export async function sendSurvey(collectionId: string) {
 
         // Prepare respondent emails
         for (const userId of collectionData.userIds) {
-            const user = allUsers.find(u => u.id === userId);
+            const user = await getUserById(userId);
             if (user?.email) {
                 const surveyLink = `${appUrl}/surveys/${collectionData.surveyId}/take`;
                 emailPromises.push(sendEmail({
@@ -402,7 +399,7 @@ export async function sendSurvey(collectionId: string) {
 
         // Prepare super-user emails
         for (const userId of collectionData.superUserIds) {
-            const user = allUsers.find(u => u.id === userId);
+            const user = await getUserById(userId);
             if (user?.email) {
                 const resultsLink = `${appUrl}/admin/collections/edit/${collectionData.id}`;
                  emailPromises.push(sendEmail({
