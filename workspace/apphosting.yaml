@@ -8,12 +8,3 @@ runConfig:
   # Set the timeout for server requests, including Server Actions.
   # This prevents long-running actions like sending emails from failing.
   timeoutSeconds: 120
-
-# Pass through App Hosting's default environment variables
-# to make them available at runtime.
-env:
-  - variable: APP_URL
-  - variable: GCLOUD_PROJECT
-  - variable: REPO_ID
-  - variable: REPO_BRANCH
-  - variable: REPO_COMMIT_SHA
