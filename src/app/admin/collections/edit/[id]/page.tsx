@@ -248,6 +248,12 @@ export default function EditCollectionPage() {
                 Back to Admin
             </Link>
             </Button>
+             <Button asChild>
+                <Link href={`/admin/collections/${collection.id}/preview`}>
+                    <Send className="mr-2 h-4 w-4"/>
+                    Preview & Send
+                </Link>
+            </Button>
             {!isEditMode && (
                 <Button onClick={() => setIsEditMode(true)}>
                     <Edit className="mr-2 h-4 w-4"/>

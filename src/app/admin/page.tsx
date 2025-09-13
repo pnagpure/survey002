@@ -1,3 +1,4 @@
+
 import { getAllSurveys, getAllResponses, getAllSurveyCollections } from "@/lib/data";
 import {
   Card,
@@ -15,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft, Send } from "lucide-react";
+import { FileText, MessageSquare, Users, Plus, Shield, ArrowLeft, Send, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -232,11 +233,10 @@ export default async function AdminPage() {
                           variant="outline"
                           size="sm"
                           asChild
-                          disabled={collection.status !== 'pending'}
                         >
                           <Link href={`/admin/collections/${collection.id}/preview`}>
-                            <Send className="mr-2 h-4 w-4" />
-                            Preview & Send
+                            {collection.status === 'pending' ? <Send className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                            {collection.status === 'pending' ? 'Preview & Send' : 'View & Resend'}
                           </Link>
                         </Button>
                         <Button
