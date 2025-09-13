@@ -361,14 +361,18 @@ export async function sendSurvey(collectionId: string) {
     try {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
         
-        const [collection, survey, allUsers] = await Promise.all([
+        const [collectionData, allUsers] = await Promise.all([
             getSurveyCollectionById(collectionId),
-            getSurveyById((await getSurveyCollectionById(collectionId))?.surveyId || ''),
             getAllUsers()
         ]);
         
-        if (!collection || !survey) {
-            throw new Error("Collection or Survey not found.");
+        if (!collectionData) {
+            throw new Error("Collection not found.");
+        }
+        const survey = await getSurveyById(collectionData.surveyId);
+
+        if (!survey) {
+            throw new Error("Survey not found.");
         }
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
@@ -376,37 +380,37 @@ export async function sendSurvey(collectionId: string) {
         const emailPromises = [];
 
         // Prepare respondent emails
-        for (const userId of collection.userIds) {
+        for (const userId of collectionData.userIds) {
             const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
-                const surveyLink = `${appUrl}/surveys/${collection.surveyId}/take`;
+                const surveyLink = `${appUrl}/surveys/${collectionData.surveyId}/take`;
                 emailPromises.push(sendEmail({
                     to: user.email,
                     subject: `You're Invited to Take the "${survey.title}" Survey`,
                     htmlBody: `
                         <h1>Hello ${user.name},</h1>
                         <p>You have been invited to participate in the <strong>${survey.title}</strong> survey.</p>
-                        <p>${collection.sponsorMessage || ''}</p>
+                        <p>${collectionData.sponsorMessage || ''}</p>
                         <a href="${surveyLink}" style="background-color: #1E90FF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Take the Survey</a>
                         <br><br>
                         <p>Thank you for your participation!</p>
-                        <p><em>${collection.sponsorSignature || 'The SurveySwift Team'}</em></p>
+                        <p><em>${collectionData.sponsorSignature || 'The SurveySwift Team'}</em></p>
                     `
                 }));
             }
         }
 
         // Prepare super-user emails
-        for (const userId of collection.superUserIds) {
+        for (const userId of collectionData.superUserIds) {
             const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
-                const resultsLink = `${appUrl}/admin/collections/edit/${collection.id}`;
+                const resultsLink = `${appUrl}/admin/collections/edit/${collectionData.id}`;
                  emailPromises.push(sendEmail({
                     to: user.email,
                     subject: `Survey "${survey.title}" is now active`,
                     htmlBody: `
                         <h1>Hello ${user.name},</h1>
-                        <p>The survey <strong>${survey.title}</strong> associated with the collection <strong>${collection.name}</strong> is now active.</p>
+                        <p>The survey <strong>${survey.title}</strong> associated with the collection <strong>${collectionData.name}</strong> is now active.</p>
                         <p>You can monitor the results and manage the collection using the link below:</p>
                         <a href="${resultsLink}" style="background-color: #8A2BE2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Collection & Results</a>
                     `
