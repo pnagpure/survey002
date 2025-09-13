@@ -374,12 +374,11 @@ export async function sendSurvey(collectionId: string) {
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
 
-        const allUsers = await getAllUsers();
         const emailPromises = [];
 
         // Prepare respondent emails
-        collectionData.userIds.forEach(userId => {
-            const user = allUsers.find(u => u.id === userId);
+        for (const userId of collectionData.userIds) {
+            const user = await getUserById(userId);
             if (user?.email) {
                 const surveyLink = `${appUrl}/surveys/${collectionData.surveyId}/take`;
                 emailPromises.push(sendEmail({
@@ -396,11 +395,11 @@ export async function sendSurvey(collectionId: string) {
                     `
                 }));
             }
-        });
+        }
 
         // Prepare super-user emails
-        collectionData.superUserIds.forEach(userId => {
-            const user = allUsers.find(u => u.id === userId);
+        for (const userId of collectionData.superUserIds) {
+            const user = await getUserById(userId);
             if (user?.email) {
                 const resultsLink = `${appUrl}/admin/collections/edit/${collectionData.id}`;
                  emailPromises.push(sendEmail({
@@ -414,7 +413,7 @@ export async function sendSurvey(collectionId: string) {
                     `
                 }));
             }
-        });
+        }
 
         // Send all emails concurrently
         const emailResults = await Promise.all(emailPromises);
