@@ -1,0 +1,462 @@
+
+'use server';
+
+import { z } from 'zod';
+import { getResponsesBySurveyId, getSurveyById, getAllUsers, getSurveyCollectionById, getUserById } from './data';
+import { generateAISurveyReport } from '@/ai/flows/generate-ai-survey-report';
+import { analyzeTextResponses } from '@/ai/flows/analyze-text-responses';
+import { revalidatePath } from 'next/cache';
+import jStat from 'jstat';
+import type { Question, Survey, SurveyResponse, SurveyCollection, User } from '@/lib/types';
+import { db } from './firebase';
+import { collection, addDoc, setDoc, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { sendEmail } from './email';
+
+
+export interface StatsResult {
+  success: boolean;
+  result?: {
+    mean?: number;
+    median?: number;
+    mode?: string | number | (string | number)[];
+    range?: { min: number; max: number };
+    chiSquare?: {
+      statistic: number;
+      pValue: number;
+      df: number;
+      isSignificant: boolean;
+      interpretation: string;
+    };
+    error?: string;
+  };
+  error?: string;
+}
+
+export async function submitResponse(surveyId: string, data: Record<string, any>) {
+  try {
+    const newResponse = {
+        surveyId,
+        userId: 'user-anonymous', // In a real app, this would be the logged-in user's ID
+        submittedAt: new Date().toISOString(),
+        answers: data,
+    };
+
+    await addDoc(collection(db, 'responses'), newResponse);
+    
+    revalidatePath(`/surveys/${surveyId}/results`);
+    revalidatePath('/dashboard');
+    revalidatePath('/admin');
+    return { success: true, message: 'Thank you for your response!' };
+  } catch (error) {
+    console.error("Error submitting response:", error);
+    return { success: false, error: 'Failed to submit response.'}
+  }
+}
+
+const generateReportSchema = z.object({
+  surveyId: z.string(),
+});
+
+export async function generateReport(formData: FormData) {
+  try {
+    const { surveyId } = generateReportSchema.parse({
+      surveyId: formData.get('surveyId'),
+    });
+
+    const survey = await getSurveyById(surveyId);
+    const responses = await getResponsesBySurveyId(surveyId);
+
+    if (!survey) {
+      return { success: false, error: 'Survey not found.' };
+    }
+
+    if (responses.length === 0) {
+      return { success: false, error: 'No responses yet to generate a report.' };
+    }
+
+    const result = await generateAISurveyReport({
+      surveyTitle: survey.title,
+      surveyDescription: survey.description,
+      responses: JSON.stringify(responses.map(r => r.answers)),
+    });
+
+    return { success: true, report: result.report };
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return { success: false, error: 'Invalid input.' };
+    }
+    console.error(e);
+    return { success: false, error: 'Failed to generate report.' };
+  }
+}
+
+const analyzeTextSchema = z.object({
+  question: z.string(),
+  responses: z.string(),
+});
+
+export async function analyzeText(formData: FormData) {
+  try {
+    const { question, responses } = analyzeTextSchema.parse({
+      question: formData.get('question'),
+      responses: formData.get('responses'),
+    });
+
+    const result = await analyzeTextResponses({
+      question,
+      responses,
+    });
+
+    return { success: true, analysis: result };
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return { success: false, error: 'Invalid input.' };
+    }
+    console.error(e);
+    return { success: false, error: 'Failed to analyze text responses.' };
+  }
+}
+
+// Descriptive stats: mean, median, mode, range (for numerical/rating/text parsed as numbers)
+function computeDescriptiveStats(responses: SurveyResponse[], questionId: string): StatsResult {
+  const values: number[] = responses
+    .map(r => r.answers[questionId])
+    .filter(val => typeof val === 'number' || (typeof val === 'string' && !isNaN(Number(val))))
+    .map(val => Number(val));
+
+  if (values.length === 0) {
+    return { success: false, error: 'No valid numerical data found.' };
+  }
+
+  const mean = jStat.mean(values);
+  const median = jStat.median(values);
+  const mode = jStat.mode(values); // Returns array if multimodal
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = { min, max };
+
+  return {
+    success: true,
+    result: { mean, median, mode, range },
+  };
+}
+
+// Manual Chi-Square calculation (from observed contingency table)
+function calculateChiSquare(observed: number[][]): number {
+  const rows = observed.length;
+  const cols = observed[0].length;
+  let chiSq = 0;
+
+  // Calculate row and column totals
+  const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
+  const colTotals = observed[0].map((_, col) => observed.reduce((sum, row) => sum + row[col], 0));
+  const grandTotal = rowTotals.reduce((a, b) => a + b, 0);
+
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const expected = (rowTotals[i] * colTotals[j]) / grandTotal;
+      if (expected > 0) { // Avoid division by zero
+        chiSq += Math.pow(observed[i][j] - expected, 2) / expected;
+      }
+    }
+  }
+
+  return chiSq;
+}
+
+
+// Chi-Square independence test
+function computeChiSquare(responses: SurveyResponse[], q1: Question, q2: Question): StatsResult {
+  // Extract categorical responses (assume single select; handle multi-select separately if needed)
+  const contingencyTable: number[][] = []; // Rows: q1 options, Columns: q2 options
+
+  // Get unique categories for q1 and q2
+  const q1Cats = q1.options || ['Yes', 'No']; // Fallback for yesNo
+  const q2Cats = q2.options || ['Yes', 'No'];
+  const table = Array.from({ length: q1Cats.length }, () => Array(q2Cats.length).fill(0));
+
+  responses.forEach(r => {
+    const ans1 = r.answers[q1.id];
+    const ans2 = r.answers[q2.id];
+    if (ans1 && ans2 && typeof ans1 === 'string' && typeof ans2 === 'string') {
+      const idx1 = q1Cats.indexOf(ans1);
+      const idx2 = q2Cats.indexOf(ans2);
+      if (idx1 >= 0 && idx2 >= 0) {
+        table[idx1][idx2]++;
+      }
+    }
+  });
+
+  const chiSq = calculateChiSquare(table);
+  const df = (q1Cats.length - 1) * (q2Cats.length - 1);
+  const pValue = 1 - jStat.chisquare.cdf(chiSq, df); // CDF from jStat
+  const isSignificant = pValue < 0.05;
+  const interpretation = isSignificant 
+    ? `There is a statistically significant association between "${q1.text}" and "${q2.text}".`
+    : `There is no statistically significant association between "${q1.text}" and "${q2.text}".`;
+
+  return {
+    success: true,
+    result: {
+      chiSquare: { statistic: chiSq, pValue, df, isSignificant, interpretation },
+    },
+  };
+}
+
+
+export async function runStatisticalTest(data: {
+  testType: 'descriptive' | 'chi-square';
+  questionId?: string; // For descriptive (single question)
+  question1?: Question; // For Chi-Square
+  question2?: Question;
+  responses: SurveyResponse[];
+}): Promise<StatsResult> {
+  try {
+    const { testType, questionId, question1, question2, responses } = data;
+
+    if (testType === 'descriptive') {
+      if (!questionId) {
+        return { success: false, error: 'Question ID required for descriptive stats.' };
+      }
+      return computeDescriptiveStats(responses, questionId);
+    }
+
+    if (testType === 'chi-square') {
+      if (!question1 || !question2) {
+        return { success: false, error: 'Two questions required for Chi-Square.' };
+      }
+      if (!['multiple-choice', 'yesNo', 'dropdown'].includes(question1.type) || !['multiple-choice', 'yesNo', 'dropdown'].includes(question2.type)) {
+        return { success: false, error: 'Chi-Square requires categorical questions.' };
+      }
+      return computeChiSquare(responses, question1, question2);
+    }
+
+    return { success: false, error: 'Invalid test type.' };
+  } catch (error) {
+    console.error('Stats computation error:', error);
+    return { success: false, error: 'Computation failed.' };
+  }
+}
+
+export async function createSurvey(data: { title: string, description: string, questions: Question[] }) {
+  try {
+    const { title, description, questions } = data;
+    const surveyRef = doc(collection(db, 'surveys'));
+    await setDoc(surveyRef, {
+      title,
+      description,
+      questions,
+      createdAt: new Date().toISOString(),
+    });
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error("Error creating survey:", error);
+    return { success: false, error: "Failed to create survey." };
+  }
+}
+
+async function findOrCreateUser(user: { name: string, email: string }): Promise<string> {
+    try {
+        // This is a simplified version. In a real app, you'd query to see if the user exists.
+        // For this example, we'll just add them and assume they are new if not found by a simple ID guess.
+        // A robust solution would query by email.
+        const userRef = doc(collection(db, 'users'));
+        await setDoc(userRef, user);
+        return userRef.id;
+    } catch(error) {
+        console.error("Error finding or creating user:", error);
+        // Re-throw the error to be caught by the calling function
+        throw new Error("Failed to process user data.");
+    }
+}
+
+
+export async function createCollection(data: {
+    name: string;
+    surveyId: string;
+    schedule: string;
+    cohortType?: 'organisation' | 'university' | 'government' | 'general';
+    logoDataUri?: string;
+    sponsorMessage?: string;
+    sponsorSignature?: string;
+    respondents: {id: string, name: string, email: string}[];
+    superUsers: {id: string, name: string, email: string}[];
+}) {
+    try {
+        const { name, surveyId, schedule, respondents, superUsers, ...rest } = data;
+        
+        const respondentIds = await Promise.all(respondents.map(u => findOrCreateUser(u)));
+        const superUserIds = await Promise.all(superUsers.map(u => findOrCreateUser(u)));
+
+        const newCollection = {
+            name,
+            surveyId,
+            schedule,
+            userIds: respondentIds,
+            superUserIds: superUserIds,
+            status: new Date(schedule) <= new Date() ? 'active' : 'pending',
+            ...rest,
+        };
+
+        await addDoc(collection(db, 'surveyCollections'), newCollection);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch(error) {
+        console.error("Error creating collection:", error);
+        return { success: false, error: "Failed to create collection." };
+    }
+}
+
+export async function updateCollection(collectionId: string, data: {
+    cohortType?: 'organisation' | 'university' | 'government' | 'general';
+    logoDataUri?: string;
+    sponsorMessage?: string;
+    sponsorSignature?: string;
+    respondents: {id: string, name: string, email: string}[];
+    superUsers: {id: string, name: string, email: string}[];
+}) {
+    try {
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
+
+        const { respondents, superUsers, ...rest } = data;
+        const respondentIds = await Promise.all(respondents.map(u => findOrCreateUser(u)));
+        const superUserIds = await Promise.all(superUsers.map(u => findOrCreateUser(u)));
+
+        const updatedData = {
+            ...rest,
+            userIds: respondentIds,
+            superUserIds: superUserIds,
+        };
+        
+        await updateDoc(collectionRef, updatedData);
+        revalidatePath(`/admin/collections/edit/${collectionId}`);
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating collection:", error);
+        return { success: false, error: "Failed to update collection." };
+    }
+}
+
+
+export async function updateCollectionContent(collectionId: string, data: { sponsorMessage?: string; sponsorSignature?: string; }) {
+     try {
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
+        await updateDoc(collectionRef, {
+            sponsorMessage: data.sponsorMessage,
+            sponsorSignature: data.sponsorSignature,
+        });
+
+        revalidatePath(`/admin/collections/${collectionId}/preview`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating collection content:", error);
+        return { success: false, error: "Failed to save content." };
+    }
+}
+
+
+export async function sendSurvey(collectionId: string) {
+    try {
+        const collectionRef = doc(db, 'surveyCollections', collectionId);
+        
+        const collectionData = await getSurveyCollectionById(collectionId);
+        
+        if (!collectionData) {
+            throw new Error("Collection not found.");
+        }
+        const survey = await getSurveyById(collectionData.surveyId);
+
+        if (!survey) {
+            throw new Error("Survey not found.");
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
+
+        const emailPromises = [];
+
+        // Prepare respondent emails
+        for (const userId of collectionData.userIds) {
+            const user = await getUserById(userId);
+            if (user?.email) {
+                const surveyLink = `${appUrl}/surveys/${collectionData.surveyId}/take`;
+                emailPromises.push(sendEmail({
+                    to: user.email,
+                    subject: `You're Invited to Take the "${survey.title}" Survey`,
+                    htmlBody: `
+                        <h1>Hello ${user.name},</h1>
+                        <p>You have been invited to participate in the <strong>${survey.title}</strong> survey.</p>
+                        <p>${collectionData.sponsorMessage || ''}</p>
+                        <a href="${surveyLink}" style="background-color: #1E90FF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Take the Survey</a>
+                        <br><br>
+                        <p>Thank you for your participation!</p>
+                        <p><em>${collectionData.sponsorSignature || 'The SurveySwift Team'}</em></p>
+                    `
+                }));
+            }
+        }
+
+        // Prepare super-user emails
+        for (const userId of collectionData.superUserIds) {
+            const user = await getUserById(userId);
+            if (user?.email) {
+                const resultsLink = `${appUrl}/admin/collections/edit/${collectionData.id}`;
+                 emailPromises.push(sendEmail({
+                    to: user.email,
+                    subject: `Survey "${survey.title}" is now active`,
+                    htmlBody: `
+                        <h1>Hello ${user.name},</h1>
+                        <p>The survey <strong>${survey.title}</strong> associated with the collection <strong>${collectionData.name}</strong> is now active.</p>
+                        <p>You can monitor the results and manage the collection using the link below:</p>
+                        <a href="${resultsLink}" style="background-color: #8A2BE2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Collection & Results</a>
+                    `
+                }));
+            }
+        }
+
+        // Send all emails concurrently
+        const emailResults = await Promise.all(emailPromises);
+
+        const failures = emailResults.filter(res => !res.success);
+        if (failures.length > 0) {
+            const firstError = failures[0].error || 'An unknown error occurred during email dispatch.';
+            // Still update status but return the error
+            await updateDoc(collectionRef, { status: 'active' });
+            return { success: false, error: `Failed to send ${failures.length} emails. First error: ${firstError}` };
+        }
+
+        await updateDoc(collectionRef, { status: 'active' });
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error sending survey:", error);
+        return { success: false, error: "Failed to send survey and notify users." };
+    }
+}
+
+
+export async function addUser(user: { name: string; email: string }) {
+    try {
+        await addDoc(collection(db, 'users'), user);
+        revalidatePath('/admin/users');
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding user:", error);
+        return { success: false, error: 'Failed to add user.' };
+    }
+}
+
+export async function deleteUser(userId: string) {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await deleteDoc(userRef);
+        // Note: Removing user from collections would require a more complex query/batch write in real Firestore
+        revalidatePath('/admin/users');
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return { success: false, error: 'Failed to delete user.' };
+    }
+}
