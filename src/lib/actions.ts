@@ -243,12 +243,13 @@ export async function createSurvey(data: { title: string, description: string, q
     const { title, description, questions } = data;
     const surveyRef = doc(collection(db, 'surveys'));
     await setDoc(surveyRef, {
+      id: surveyRef.id,
       title,
       description,
       questions,
       createdAt: new Date().toISOString(),
     });
-    revalidatePath('/admin');
+    revalidatePath('/admin', 'layout');
     return { success: true };
   } catch (error) {
     console.error("Error creating survey:", error);
@@ -460,3 +461,5 @@ export async function deleteUser(userId: string) {
         return { success: false, error: 'Failed to delete user.' };
     }
 }
+
+    
