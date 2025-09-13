@@ -373,7 +373,8 @@ export async function sendSurvey(collectionId: string) {
             throw new Error("Survey not found.");
         }
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
+        // Use the APP_URL from App Hosting in production, otherwise fall back.
+        const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
 
         const emailPromises = [];
 
@@ -461,5 +462,3 @@ export async function deleteUser(userId: string) {
         return { success: false, error: 'Failed to delete user.' };
     }
 }
-
-    
