@@ -4,10 +4,10 @@ import { SurveyForm } from "./survey-form";
 import type { SurveyCollection } from '@/lib/types';
 
 // Helper to find which collection this survey belongs to for the user
-const findCollectionForSurvey = async (surveyId: string): Promise<SurveyCollection | undefined> => {
+const findCollectionForSurvey = async (surveyId: string): Promise<SurveyCollection | null> => {
     // In a real app, you'd also check if the current user is part of the collection
     const collections = await getSurveyCollectionsBySurveyId(surveyId);
-    return collections[0]; // For this mock, just return the first one found
+    return collections.length > 0 ? collections[0] : null; // Return first found or null
 }
 
 export default async function TakeSurveyPage({
@@ -24,6 +24,6 @@ export default async function TakeSurveyPage({
   const collection = await findCollectionForSurvey(params.id);
 
   return (
-    <SurveyForm survey={survey} collection={collection} />
+    <SurveyForm survey={survey} collection={collection ?? undefined} />
   );
 }
