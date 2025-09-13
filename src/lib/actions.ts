@@ -361,11 +361,15 @@ export async function sendSurvey(collectionId: string) {
     try {
         const collectionRef = doc(db, 'surveyCollections', collectionId);
         
-        const collectionData = await getSurveyCollectionById(collectionId);
+        const [collectionData, allUsers] = await Promise.all([
+            getSurveyCollectionById(collectionId),
+            getAllUsers(),
+        ]);
         
         if (!collectionData) {
             throw new Error("Collection not found.");
         }
+        
         const survey = await getSurveyById(collectionData.surveyId);
 
         if (!survey) {
@@ -374,11 +378,11 @@ export async function sendSurvey(collectionId: string) {
 
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9003';
 
-        const emailPromises = [];
+        const emailPromises: Promise<{ success: boolean; error?: string }>[] = [];
 
         // Prepare respondent emails
         for (const userId of collectionData.userIds) {
-            const user = await getUserById(userId);
+            const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
                 const surveyLink = `${appUrl}/surveys/${collectionData.surveyId}/take`;
                 emailPromises.push(sendEmail({
@@ -399,7 +403,7 @@ export async function sendSurvey(collectionId: string) {
 
         // Prepare super-user emails
         for (const userId of collectionData.superUserIds) {
-            const user = await getUserById(userId);
+            const user = allUsers.find(u => u.id === userId);
             if (user?.email) {
                 const resultsLink = `${appUrl}/admin/collections/edit/${collectionData.id}`;
                  emailPromises.push(sendEmail({
