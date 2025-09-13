@@ -1,22 +1,19 @@
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
-# The backend property specifies the configuration for the Next.js backend.
-backend:
-  # runConfig manages the scaling and timeout behavior of your server.
-  runConfig:
-    # Increase this value to automatically spin up more instances
-    # in response to increased traffic.
-    maxInstances: 1
-    # Set the timeout for server requests, including Server Actions.
-    # This prevents long-running actions like sending emails from failing.
-    timeoutSeconds: 120
+runConfig:
+  # Increase this value if you'd like to automatically spin up
+  # more instances in response to increased traffic.
+  maxInstances: 1
+  # Set the timeout for server requests, including Server Actions.
+  # This prevents long-running actions like sending emails from failing.
+  timeoutSeconds: 120
 
-  # env passes through App Hosting's default environment variables
-  # to make them available at runtime.
-  env:
-    - variable: APP_URL
-    - variable: GCLOUD_PROJECT
-    - variable: REPO_ID
-    - variable: REPO_BRANCH
-    - variable: REPO_COMMIT_SHA
+# Pass through App Hosting's default environment variables
+# to make them available at runtime.
+env:
+  - variable: APP_URL
+  - variable: GCLOUD_PROJECT
+  - variable: REPO_ID
+  - variable: REPO_BRANCH
+  - variable: REPO_COMMIT_SHA
