@@ -11,7 +11,7 @@ import type { Survey, SurveyCollection } from '@/lib/types';
 
 
 export function SurveyForm({ survey, collection }: { survey: Survey, collection: SurveyCollection | undefined }) {
-  const [hasStarted, setHasStarted] = useState(!collection?.cohortType && !collection?.sponsorMessage); // Skip welcome if no branding/message
+  const [hasStarted, setHasStarted] = useState(false);
 
   const welcomeContent = {
     organisation: "Your feedback is important to our organization.",
