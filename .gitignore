@@ -43,3 +43,8 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# nextjs-server-action-tester
+/public/server-actions.json
+/src/app/api/list-actions
+/src/app/list-actions
